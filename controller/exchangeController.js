@@ -6,7 +6,7 @@ exports.exchange = async (req, res) => {
   const { toUserId, skillRequestedId, offeredSkillId } = req.body;
 
   const fromUserid = req.user?.id; // ✅ from passport
-  // console.log("test", fromUserid, toUserId, skillRequestedId, offeredSkillId)
+  console.log("test", fromUserid, toUserId, skillRequestedId, offeredSkillId)
 
   if (!fromUserid || !toUserId || !skillRequestedId || !offeredSkillId) {
     return res.status(400).json({
