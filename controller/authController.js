@@ -144,73 +144,61 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
 
-// POST /api/signup
+// post/signup
+
 exports.authSignup = async (req, res) => {
   const { fullname, username, email, password } = req.body;
 
   try {
+    // Check if user exists by email or username
     const existing = await db.query(
       "SELECT * FROM users WHERE email = $1 OR username = $2",
       [email, username]
     );
 
     if (existing.rows.length > 0) {
-      console.log("user exists");
+      console.log("User exists");
       return res.status(400).json({
         success: false,
         error: "User already exists with this email/username.",
       });
     }
 
-    bcrypt.hash(password, saltRounds, async (err, hash) => {
+    // Hash password
+    const hash = await bcrypt.hash(password, saltRounds);
+
+    // Insert user into database
+    const result = await db.query(
+      "INSERT INTO users (fullname, username, email, hash_password) VALUES ($1, $2, $3, $4) RETURNING *",
+      [fullname, username, email, hash]
+    );
+
+    const user = result.rows[0];
+
+    // Log user in using session (assuming Passport.js for session management)
+    req.login(user, (err) => {
       if (err) {
-        console.error("Hashing error:", err);
-        return res
-          .status(500)
-          .json({ success: false, error: "Password hashing failed." });
-      }
-
-      try {
-        const result = await db.query(
-          "INSERT INTO users (fullname, username, email, hash_password) VALUES ($1, $2, $3, $4) RETURNING *",
-          [fullname, username, email, hash]
-        );
-
-        const user = result.rows[0];
-
-        // log the user in
-        req.login(user, (err) => {
-          if (err) {
-            return res.status(500).json({
-              success: false,
-              error: "Login after signup failed.",
-            });
-          }
-
-          console.log("Signup successful");
-          return res.status(201).json({
-            success: true,
-            message: "Signup successful",
-            user: {
-              id: user.id,
-              fullname: user.fullname,
-              username: user.username,
-              email: user.email,
-            },
-          });
+        return res.status(500).json({
+          success: false,
+          error: "Login after signup failed.",
         });
-      } catch (dbErr) {
-        console.error("DB error:", dbErr);
-        return res
-          .status(500)
-          .json({ success: false, error: "Database insert failed." });
       }
+
+      console.log("Signup successful");
+      return res.status(201).json({
+        success: true,
+        message: "Signup successful",
+        user: {
+          id: user.id,
+          fullname: user.fullname,
+          username: user.username,
+          email: user.email,
+        },
+      });
     });
   } catch (err) {
     console.error("Signup error:", err);
-    return res
-      .status(500)
-      .json({ success: false, error: "Something went wrong." });
+    return res.status(500).json({ success: false, error: "Something went wrong." });
   }
 };
 
