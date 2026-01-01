@@ -1,28 +1,13 @@
-// const { Pool } = require('pg');
-// require('dotenv').config();
-
-
-// const db = new Pool({
-// user: process.env.PG_USER,
-//   host: process.env.PG_HOST,
-//   database: process.env.PG_DATABASE,
-//   password: process.env.PG_PASSWORD,
-//   port: process.env.PG_PORT,
-//  })
-
-// Instead of ES module import
-// import pkg from 'pg';
-
-// Use CommonJS require
 const { Pool } = require('pg');
 
-// Example usage
+// Configure the pool with your external Postgres connection string
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT
+  connectionString: 'postgresql://skillwrap_db_user:O3D526EAYy9bnOiaQ8RzlxnUWSpx1B0P@dpg-d59utb4hg0os73cjqhi0-a.oregon-postgres.render.com/skillwrap_db',
+  ssl: {
+    rejectUnauthorized: false // Needed for Render.com hosted Postgres
+  }
 });
 
+console.log('succesfully connected to db')
+// Export the pool to use in other parts of your app
 module.exports = pool;
