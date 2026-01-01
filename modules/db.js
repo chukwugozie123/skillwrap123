@@ -8,15 +8,21 @@
 //   database: process.env.PG_DATABASE,
 //   password: process.env.PG_PASSWORD,
 //   port: process.env.PG_PORT,
-// })
-import pkg from 'pg';
-const { Pool } = pkg;
+//  })
 
+// Instead of ES module import
+// import pkg from 'pg';
+
+// Use CommonJS require
+const { Pool } = require('pg');
+
+// Example usage
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT
 });
 
-export default pool;
-console.log("sucessfull conntect to db");
-
-module.exports = db
+module.exports = pool;
