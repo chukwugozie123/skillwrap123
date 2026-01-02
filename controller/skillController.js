@@ -97,26 +97,6 @@ exports.getSkills = async (req, res) => {
   }
 };
 
-
-
-// exports.getSkills = async (req, res) => {
-//   try {
-//     const result = await db.query("SELECT skills.*, users.username FROM skills JOIN users ON skills.user_id = users.id ORDER BY skills.created_at DESC")
-//     console.log(result.rows, 'sadsad')
-//     // const result = await db.query("SELECT * FROM skills");
-//     res.status(200).json({
-//       success: true,
-//       skills: result.rows,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Something went wrong while fetching skills.",
-//     });
-//   }
-// };
-
 // ✅ Search Skill
 exports.search = async (req, res) => {
   let { title } = req.query;
