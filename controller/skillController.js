@@ -65,21 +65,57 @@ exports.oneskill = async (req, res) => {
 
 exports.getSkills = async (req, res) => {
   try {
-    const result = await db.query("SELECT skills.*, users.username FROM skills JOIN users ON skills.user_id = users.id ORDER BY skills.created_at DESC")
-    console.log(result.rows, 'sadsad')
-    // const result = await db.query("SELECT * FROM skills");
+    const result = await db.query(`
+      SELECT
+        skills.id,
+        skills.title,
+        skills.category,
+        skills.description,
+        skills.level,
+        skills.created_at,
+        users.username
+      FROM skills
+      LEFT JOIN users ON skills.user_id = users.id
+      ORDER BY skills.created_at DESC
+    `);
+
+    const skills = result.rows.map(skill => ({
+      ...skill,
+      username: skill.username || "Unknown",
+    }));
+
     res.status(200).json({
       success: true,
-      skills: result.rows,
+      skills,
     });
   } catch (error) {
-    console.error(error);
+    console.error("GET /skills error:", error);
     res.status(500).json({
       success: false,
-      error: "Something went wrong while fetching skills.",
+      error: "Failed to fetch skills",
     });
   }
 };
+
+
+
+// exports.getSkills = async (req, res) => {
+//   try {
+//     const result = await db.query("SELECT skills.*, users.username FROM skills JOIN users ON skills.user_id = users.id ORDER BY skills.created_at DESC")
+//     console.log(result.rows, 'sadsad')
+//     // const result = await db.query("SELECT * FROM skills");
+//     res.status(200).json({
+//       success: true,
+//       skills: result.rows,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Something went wrong while fetching skills.",
+//     });
+//   }
+// };
 
 // ✅ Search Skill
 exports.search = async (req, res) => {
@@ -318,8 +354,8 @@ exports.createSkill = async (req, res) => {
     const imagepath = req.file.filename; // ✅ fixed
 
     await db.query(
-      "INSERT INTO skills (title, description, category, level, user_id, skill_img) VALUES ($1, $2, $3, $4, $5, $6)",
-      [skillname, skilldesc, category, skilllevel, user_id, imagepath]
+      "INSERT INTO skills (title, description, category, level, user_id) VALUES ($1, $2, $3, $4, $5)",
+      [skillname, skilldesc, category, skilllevel, user_id]
     );
 
     res.status(201).json({

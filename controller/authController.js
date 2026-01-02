@@ -206,16 +206,24 @@ exports.authSignup = async (req, res) => {
 // POST /api/login
 exports.authLogin = (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
-    if (err) return res.status(500).json({ success: false, error: err });
-    if (!user)
-      return res
-        .status(401)
-        .json({ success: false, error:  "Invalid login" }),
-        console.log('failed');
+    if (err) {
+      console.error("❌ Passport error:", err);
+      return res.status(500).json({ success: false });
+    }
+
+    if (!user) {
+      console.log("❌ Login failed");
+      return res.status(401).json({ success: false, error: "Invalid login" });
+    }
 
     req.login(user, (err) => {
-      if (err)
-        return res.status(500).json({ success: false, error: "Login failed." });
+      if (err) {
+        console.error("❌ req.login error:", err);
+        return res.status(500).json({ success: false });
+      }
+
+      console.log("✅ Logged in user:", req.user);
+
       res.json({
         success: true,
         message: "Login successful",
@@ -226,15 +234,41 @@ exports.authLogin = (req, res, next) => {
           email: user.email,
         },
       });
-       console.log('success')
     });
   })(req, res, next);
 };
 
+// exports.authLogin = (req, res, next) => {
+//   passport.authenticate("local", (err, user, info) => {
+//     if (err) return res.status(500).json({ success: false, error: err });
+//     if (!user)
+//       return res
+//         .status(401)
+//         .json({ success: false, error:  "Invalid login" }),
+//         console.log('failed');
+
+//     req.login(user, (err) => {
+//       if (err)
+//         return res.status(500).json({ success: false, error: "Login failed." });
+//       res.json({
+//         success: true,
+//         message: "Login successful",
+//         user: {
+//           id: user.id,
+//           fullname: user.fullname,
+//           username: user.username,
+//           email: user.email,
+//         },
+//       });
+//        console.log('success')
+//     });
+//   })(req, res, next);
+// };
+
 // GET /api/dashboard
 exports.dashboard = async (req, res) => {
   try {
-    if (!req.user) {
+    if (!req?.user) {
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
