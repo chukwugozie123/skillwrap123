@@ -193,15 +193,134 @@
 
 
 
+// const express = require("express");
+// const session = require("express-session");
+// const cors = require("cors");
+// const passport = require("passport");
+// const { Server } = require("socket.io");
+// const http = require("http");
+// require("dotenv").config();
+// require("./config/passport"); // passport config
+
+// const authRoutes = require("./routes/authRoutes");
+// const skillRoutes = require("./routes/skillRoutes");
+// const exchangeRoutes = require("./routes/exchangeRoutes");
+// const uploadRoute = require("./routes/uploadRoutes");
+// const notificationRoute = require("./routes/notifiacationRoute");
+// const reviewRoute = require("./routes/reviewRoute");
+// const profileRoute = require("./routes/profileRoute");
+
+// const app = express();
+// const port = process.env.PORT || 5000;
+// const server = http.createServer(app);
+
+// /* ================= SOCKET.IO ================= */
+// const io = new Server(server, {
+//   cors: {
+//     origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
+//     credentials: true,
+//   },
+// });
+
+// module.exports = { io };
+
+// /* ================= MIDDLEWARE ================= */
+// app.set("trust proxy", 1); // REQUIRED on Render
+
+// app.use("/uploads", express.static("uploads"));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+
+// const allowedOrigins = ["http://localhost:3000"];
+// if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+
+// app.use(
+//   cors({
+//     origin(origin, callback) {
+//       if (!origin) return callback(null, true);
+//       if (!allowedOrigins.includes(origin)) {
+//         return callback(new Error("CORS blocked"), false);
+//       }
+//       callback(null, true);
+//     },
+//     credentials: true,
+//   })
+// );
+
+// /* ================= SESSION ================= */
+// app.use(
+//   session({
+//     name: "skillwrap.sid",
+//     secret: process.env.SESSION_SECRET || "defaultsecret",
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+//       maxAge: 1000 * 60 * 60 * 24,
+//     },
+//   })
+// );
+
+// /* ================= PASSPORT ================= */
+// app.use(passport.initialize());
+// app.use(passport.session());
+
+// /* DEBUG (REMOVE LATER) */
+// app.use((req, res, next) => {
+//   console.log("SESSION:", req.session);
+//   console.log("USER:", req.user);
+//   next();
+// });
+
+// /* ================= ROUTES ================= */
+// app.use("/auth", authRoutes);
+// app.use("/", skillRoutes);
+// app.use("/", exchangeRoutes);
+// app.use("/", uploadRoute);
+// app.use("/", reviewRoute);
+// app.use("/", profileRoute);
+// app.use("/", notificationRoute);
+
+// /* ================= SOCKET EVENTS ================= */
+// io.on("connection", (socket) => {
+//   console.log("🔌 Socket connected:", socket.id);
+
+//   socket.on("register_user", (userId) => {
+//     if (!userId) return;
+//     socket.join(userId.toString());
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log("🔴 Socket disconnected:", socket.id);
+//   });
+// });
+
+// /* ================= START ================= */
+// server.listen(port, () => {
+//   console.log(`✅ API running on http://localhost:${port}`);
+// });
+
+
+
+
+
+
+
+
+
+
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
 const passport = require("passport");
-const { Server } = require("socket.io");
 const http = require("http");
+const { Server } = require("socket.io");
 require("dotenv").config();
-require("./config/passport"); // passport config
+require("./config/passport");
 
+// ROUTES
 const authRoutes = require("./routes/authRoutes");
 const skillRoutes = require("./routes/skillRoutes");
 const exchangeRoutes = require("./routes/exchangeRoutes");
@@ -214,25 +333,14 @@ const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-/* ================= SOCKET.IO ================= */
-const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:3000", process.env.FRONTEND_URL].filter(Boolean),
-    credentials: true,
-  },
-});
+/* ================= TRUST PROXY (REQUIRED ON RENDER) ================= */
+app.set("trust proxy", 1);
 
-module.exports = { io };
-
-/* ================= MIDDLEWARE ================= */
-app.set("trust proxy", 1); // REQUIRED on Render
-
-app.use("/uploads", express.static("uploads"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-const allowedOrigins = ["http://localhost:3000"];
-if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
+/* ================= CORS (MUST BE FIRST) ================= */
+const allowedOrigins = [
+  "http://localhost:3000",
+  process.env.FRONTEND_URL, // e.g. https://skillwrap.vercel.app
+].filter(Boolean);
 
 app.use(
   cors({
@@ -241,11 +349,19 @@ app.use(
       if (!allowedOrigins.includes(origin)) {
         return callback(new Error("CORS blocked"), false);
       }
-      callback(null, true);
+      return callback(null, true);
     },
     credentials: true,
   })
 );
+
+// IMPORTANT: allow preflight requests
+app.options("*", cors());
+
+/* ================= MIDDLEWARE ================= */
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static("uploads"));
 
 /* ================= SESSION ================= */
 app.use(
@@ -267,7 +383,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-/* DEBUG (REMOVE LATER) */
+/* ================= DEBUG (REMOVE LATER) ================= */
 app.use((req, res, next) => {
   console.log("SESSION:", req.session);
   console.log("USER:", req.user);
@@ -283,13 +399,19 @@ app.use("/", reviewRoute);
 app.use("/", profileRoute);
 app.use("/", notificationRoute);
 
-/* ================= SOCKET EVENTS ================= */
+/* ================= SOCKET.IO ================= */
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
   socket.on("register_user", (userId) => {
-    if (!userId) return;
-    socket.join(userId.toString());
+    if (userId) socket.join(userId.toString());
   });
 
   socket.on("disconnect", () => {
@@ -297,7 +419,9 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ================= START ================= */
+module.exports = { io };
+
+/* ================= START SERVER ================= */
 server.listen(port, () => {
-  console.log(`✅ API running on http://localhost:${port}`);
+  console.log(`✅ API running on port ${port}`);
 });
