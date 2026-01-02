@@ -311,6 +311,12 @@
 
 
 
+
+
+
+
+
+
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
@@ -336,7 +342,7 @@ const server = http.createServer(app);
 /* ================= TRUST PROXY (REQUIRED ON RENDER) ================= */
 app.set("trust proxy", 1);
 
-/* ================= CORS (MUST BE FIRST) ================= */
+/* ================= CORS (SAFE FOR EXPRESS 4 & 5) ================= */
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.FRONTEND_URL, // e.g. https://skillwrap.vercel.app
@@ -345,7 +351,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // allow server-to-server
       if (!allowedOrigins.includes(origin)) {
         return callback(new Error("CORS blocked"), false);
       }
@@ -354,9 +360,6 @@ app.use(
     credentials: true,
   })
 );
-
-// IMPORTANT: allow preflight requests
-app.options("*", cors());
 
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
@@ -370,6 +373,7 @@ app.use(
     secret: process.env.SESSION_SECRET || "defaultsecret",
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -383,10 +387,10 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-/* ================= DEBUG (REMOVE LATER) ================= */
+/* ================= DEBUG (REMOVE AFTER CONFIRMATION) ================= */
 app.use((req, res, next) => {
-  console.log("SESSION:", req.session);
-  console.log("USER:", req.user);
+  console.log("SESSION:", req.session?.id);
+  console.log("USER:", req.user?.id);
   next();
 });
 
