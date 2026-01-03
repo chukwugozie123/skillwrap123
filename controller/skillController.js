@@ -63,16 +63,53 @@ exports.oneskill = async (req, res) => {
 
 
 
+// exports.getSkills = async (req, res) => {
+//   try {
+//     const result = await db.query(`
+//       SELECT
+//         skills.id,
+//         skills.title,
+//         skills.category,
+//         skills.description,
+//         skills.level,
+//         skills.created_at,
+//         users.username
+//       FROM skills
+//       LEFT JOIN users ON skills.user_id = users.id
+//       ORDER BY skills.created_at DESC
+//     `);
+
+//     const skills = result.rows.map(skill => ({
+//       ...skill,
+//       username: skill.username || "Unknown",
+//     }));
+
+//     res.status(200).json({
+//       success: true,
+//       skills,
+//     });
+//   } catch (error) {
+//     console.error("GET /skills error:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Failed to fetch skills",
+//     });
+//   }
+// };
+
+
+
 exports.getSkills = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT
-        skills.id,
+        skills.id AS skill_id,
         skills.title,
         skills.category,
         skills.description,
         skills.level,
         skills.created_at,
+        skills.user_id AS owner_id,
         users.username
       FROM skills
       LEFT JOIN users ON skills.user_id = users.id
@@ -80,7 +117,13 @@ exports.getSkills = async (req, res) => {
     `);
 
     const skills = result.rows.map(skill => ({
-      ...skill,
+      skillId: skill.skill_id,
+      title: skill.title,
+      category: skill.category,
+      description: skill.description,
+      level: skill.level,
+      createdAt: skill.created_at,
+      ownerId: skill.owner_id,
       username: skill.username || "Unknown",
     }));
 
@@ -96,6 +139,10 @@ exports.getSkills = async (req, res) => {
     });
   }
 };
+
+
+
+
 
 // ✅ Search Skill
 exports.search = async (req, res) => {
