@@ -197,18 +197,141 @@
 
 
 
-const db = require("../modules/db")
+// const db = require("../modules/db")
 
- exports.getUserProfile = async (req, res) => {
+//  exports.getUserProfile = async (req, res) => {
+//   const { username } = req.params;
+
+//   try {
+//     /* 1️⃣ User profile */
+//     const userResult = await db.query(
+//       `
+//       SELECT id, fullname, username, img_url, created_at
+//       FROM users
+//       WHERE id = $1
+//       `,
+//       [username]
+//     );
+
+//     if (!userResult.rows.length) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const user = userResult.rows[0];
+
+//     /* 2️⃣ Successful exchanges */
+//     const exchangeResult = await db.query(
+//       `
+//       SELECT COUNT(*)::int AS successful_exchanges
+//       FROM exchange_skills
+//       WHERE exchange_status = 'completed'
+//       AND ($1 = from_user_id OR $1 = to_user_id)
+//       `,
+//       [user.id]
+//     );
+
+//     /* 3️⃣ Skills + avg ratings */
+//     const skillsResult = await db.query(
+//       `
+//       SELECT
+//         s.id AS skill_id,
+//         s.title,
+//         s.description,
+//         s.level,
+//         s.category,
+//         s.created_at,
+//         COALESCE(ROUND(AVG(r.rating)::numeric, 1), 0) AS avg_rating,
+//         COUNT(r.id)::int AS review_count
+//       FROM skills s
+//       LEFT JOIN reviews r
+//         ON r.skill_offered_id = s.id
+//         OR r.skill_requested_id = s.id
+//       WHERE s.user_id = $1
+//       GROUP BY s.id
+//       ORDER BY s.created_at DESC
+//       `,
+//       [user.id]
+//     );
+
+//     /* 4️⃣ Reviews per skill */
+//     const skillsWithReviews = await Promise.all(
+//       skillsResult.rows.map(async (skill) => {
+//         const reviews = await db.query(
+//           `
+//           SELECT
+//             r.id,
+//             r.rating,
+//             r.review_text,
+//             r.created_at,
+//             u.username AS reviewer_username,
+//             u.img_url AS reviewer_avatar
+//           FROM reviews r
+//           JOIN users u ON u.id = r.from_user_id
+//           WHERE r.skill_offered_id = $1
+//              OR r.skill_requested_id = $1
+//           ORDER BY r.created_at DESC
+//           `,
+//           [skill.skill_id]
+//         );
+
+//         return {
+//           ...skill,
+//           reviews: reviews.rows,
+//         };
+//       })
+//     );
+
+//     /* 5️⃣ Overall rating */
+//     const overallRatingResult = await db.query(
+//       `
+//       SELECT 
+//         COALESCE(ROUND(AVG(rating)::numeric, 1), 0) AS overall_rating,
+//         COUNT(*)::int AS total_reviews
+//       FROM reviews
+//       WHERE to_user_id = $1
+//       `,
+//       [user.id]
+//     );
+
+//     res.json({
+//       profile: user,
+//       stats: {
+//         successful_exchanges: exchangeResult.rows[0].successful_exchanges,
+//         overall_rating: overallRatingResult.rows[0].overall_rating,
+//         total_reviews: overallRatingResult.rows[0].total_reviews,
+//       },
+//       skills: skillsWithReviews,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+// // seee when ur fetching the skills ehee fetch the user_id the id of the perso thay has the skill u get in the sql query 
+
+
+
+
+
+
+
+
+
+
+
+
+const db = require("../modules/db");
+
+exports.getUserProfile = async (req, res) => {
   const { username } = req.params;
 
   try {
-    /* 1️⃣ User profile */
+    /* 1️⃣ User profile (FIXED) */
     const userResult = await db.query(
       `
       SELECT id, fullname, username, img_url, created_at
       FROM users
-      WHERE id = $1
+      WHERE username = $1
       `,
       [username]
     );
@@ -225,16 +348,17 @@ const db = require("../modules/db")
       SELECT COUNT(*)::int AS successful_exchanges
       FROM exchange_skills
       WHERE exchange_status = 'completed'
-      AND ($1 = from_user_id OR $1 = to_user_id)
+        AND ($1 = from_user_id OR $1 = to_user_id)
       `,
       [user.id]
     );
 
-    /* 3️⃣ Skills + avg ratings */
+    /* 3️⃣ Skills (NOW INCLUDES user_id ✅) */
     const skillsResult = await db.query(
       `
       SELECT
         s.id AS skill_id,
+        s.user_id,                     -- ✅ OWNER ID
         s.title,
         s.description,
         s.level,
@@ -244,8 +368,11 @@ const db = require("../modules/db")
         COUNT(r.id)::int AS review_count
       FROM skills s
       LEFT JOIN reviews r
-        ON r.skill_offered_id = s.id
-        OR r.skill_requested_id = s.id
+        ON (
+          r.skill_offered_id = s.id
+          OR r.skill_requested_id = s.id
+        )
+        AND r.from_user_id <> s.user_id   -- ✅ prevent self-review
       WHERE s.user_id = $1
       GROUP BY s.id
       ORDER BY s.created_at DESC
@@ -253,10 +380,10 @@ const db = require("../modules/db")
       [user.id]
     );
 
-    /* 4️⃣ Reviews per skill */
+    /* 4️⃣ Reviews per skill (NO self reviews) */
     const skillsWithReviews = await Promise.all(
       skillsResult.rows.map(async (skill) => {
-        const reviews = await db.query(
+        const reviewsResult = await db.query(
           `
           SELECT
             r.id,
@@ -267,16 +394,19 @@ const db = require("../modules/db")
             u.img_url AS reviewer_avatar
           FROM reviews r
           JOIN users u ON u.id = r.from_user_id
-          WHERE r.skill_offered_id = $1
-             OR r.skill_requested_id = $1
+          WHERE (
+              r.skill_offered_id = $1
+              OR r.skill_requested_id = $1
+            )
+            AND r.from_user_id <> $2
           ORDER BY r.created_at DESC
           `,
-          [skill.skill_id]
+          [skill.skill_id, user.id]
         );
 
         return {
           ...skill,
-          reviews: reviews.rows,
+          reviews: reviewsResult.rows,
         };
       })
     );
@@ -284,7 +414,7 @@ const db = require("../modules/db")
     /* 5️⃣ Overall rating */
     const overallRatingResult = await db.query(
       `
-      SELECT 
+      SELECT
         COALESCE(ROUND(AVG(rating)::numeric, 1), 0) AS overall_rating,
         COUNT(*)::int AS total_reviews
       FROM reviews
@@ -293,7 +423,7 @@ const db = require("../modules/db")
       [user.id]
     );
 
-    res.json({
+    res.status(200).json({
       profile: user,
       stats: {
         successful_exchanges: exchangeResult.rows[0].successful_exchanges,
@@ -303,7 +433,7 @@ const db = require("../modules/db")
       skills: skillsWithReviews,
     });
   } catch (err) {
-    console.error(err);
+    console.error("GET /profile/:username error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -28,7 +28,7 @@ router.get(
   })
 );
 router.get("/dashboard", ensureAuth, authController.dashboard);
-router.get("/logout",ensureAuth, authController.logout)
+router.post("/logout",ensureAuth, authController.logout)
 router.get("/profile", authController.profile);
 router.patch("/edit-profile", authController.edit_profile)
 // router.post("/login", bookController.AuthLogin);

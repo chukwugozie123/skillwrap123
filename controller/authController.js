@@ -350,11 +350,21 @@ try {
 
 
 // POST /api/logout
-exports.logout = (req, res, next) => {
-  req.logout(function (err) {
-    if (err) return next(err);
+exports.logout = (req, res) => {
+req.logout(err => {
+    if (err) {
+      console.error("Logout error:", err);
+      return res.status(500).json({ error: "Logout failed" });
+    }
+
     req.session.destroy(() => {
-      res.json({ success: true, message: "Logged out successfully" });
-    });
-  });
+      res.clearCookie("skillwrap.sid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      });
+
+      res.status(200).json({ success: true });
+    })
+  })
 };
