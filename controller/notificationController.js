@@ -31,16 +31,44 @@ exports.sendNotifications = async (req, res) => {
 exports.getUserNotifications = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ success: false, message: "Not authenticated" });
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
+    }
 
     const result = await db.query(
-      `SELECT * FROM notifications WHERE receiver_id = $1 ORDER BY created_at DESC`,
+      `
+      SELECT
+        n.id,
+        n.exchange_id,
+        n.message,
+        n.is_read,
+        n.metadata,
+        n.roomId,
+        n.created_at,
+
+        sender.id AS sender_id,
+        sender.username AS sender_username,
+
+        receiver.id AS receiver_id,
+        receiver.username AS receiver_username
+
+      FROM notifications n
+      JOIN users sender ON sender.id = n.sender_id
+      JOIN users receiver ON receiver.id = n.receiver_id
+      WHERE n.receiver_id = $1
+      ORDER BY n.created_at DESC
+      `,
       [userId]
     );
 
-    res.json({ success: true, notifications: result.rows });
+    res.json({
+      success: true,
+      notifications: result.rows,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Get notifications error:", err);
     res.status(500).json({ success: false });
   }
 };
