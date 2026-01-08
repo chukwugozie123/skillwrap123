@@ -326,24 +326,8 @@ exports.delete_skill = async (req, res) => {
 
 
 
+const db = require("../modules/db");
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Controller: createSkill.js
 exports.createSkill = async (req, res) => {
   try {
     if (!req.body) {
@@ -357,7 +341,7 @@ exports.createSkill = async (req, res) => {
     const { skillname, skilldesc, category, skilllevel } = req.body;
     const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
 
-    // Validation
+    // ✅ VALIDATION
     if (skillname.length < 2 || skillname.length > 50) {
       return res.status(400).json({ error: "Skill name must be between 2 and 50 characters." });
     }
@@ -377,24 +361,41 @@ exports.createSkill = async (req, res) => {
       return res.status(400).json({ error: "Category has invalid characters." });
     }
 
-    const user_id = req.user?.id || null;
-    const imagepath = req.file.filename; // ✅ fixed
+    const user_id = req.user.id;
 
+    // ✅ CLOUDINARY DATA (already uploaded)
+    const imageUrl = req.file.path;       // secure Cloudinary URL
+    const publicId = req.file.filename;   // Cloudinary public_id
+
+    // ✅ SAVE TO DB
     await db.query(
-      "INSERT INTO skills (title, description, category, level, user_id) VALUES ($1, $2, $3, $4, $5)",
-      [skillname, skilldesc, category, skilllevel, user_id]
+      `
+      INSERT INTO skills
+      (title, description, category, level, user_id, img_url, img_public_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `,
+      [
+        skillname,
+        skilldesc,
+        category,
+        skilllevel,
+        user_id,
+        imageUrl,
+        publicId,
+      ]
     );
 
     res.status(201).json({
       success: true,
-      message: "A new skill was added successfully.",
-      img_url: `/uploads/skills/${imagepath}`,
+      message: "Skill created successfully",
+      imageUrl,
     });
+
   } catch (error) {
     console.error("Error creating skill:", error);
     res.status(500).json({
       success: false,
-      error: "Database error. Please try again.",
+      error: "Server error. Please try again.",
     });
   }
 };
