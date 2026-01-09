@@ -259,74 +259,6 @@ exports.delete_skill = async (req, res) => {
   }
 }
 
-// //  Create Skill
-// exports.createSkill = async (req, res) => {
-//   if (!req.body) {
-//     return res.status(400).json({ error: "Form data is missing" });
-//   }
-
-//  if (!req.file) return res.status(400).json({error: "skill imag is requried"})
-
-
-
-//   const { skillname, skilldesc, category, skilllevel } = req.body;
-//   const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
-
-//   // Validation
-//   if (skillname.length < 2 || skillname.length > 50) {
-//     return res.status(400).json({ error: "Skill name must be between 2 and 50 characters." });
-//   }
-//   if (!validChars.test(skillname)) {
-//     return res.status(400).json({ error: "Skill name has invalid characters." });
-//   }
-//   if (skilldesc.length < 10 || skilldesc.length > 500) {
-//     return res.status(400).json({ error: "Description must be between 10 and 500 characters." });
-//   }
-//   if (!validChars.test(skilldesc)) {
-//     return res.status(400).json({ error: "Description has invalid characters." });
-//   }
-//   if (category.length < 2 || category.length > 30) {
-//     return res.status(400).json({ error: "Category must be between 2 and 30 characters." });
-//   }
-//   if (!validChars.test(category)) {
-//     return res.status(400).json({ error: "Category has invalid characters." });
-//   }
-
-//   const user_id = req.user?.id || null;
-//   const imagepath = req.file || req.file.filename;
-
-//   try {
-//     await db.query(
-//       "INSERT INTO skills (title, description, category, level, user_id, skill_img) VALUES ($1, $2, $3, $4, $5, $6)",
-//       [skillname, skilldesc, category, skilllevel, user_id, imagepath]
-//     );
-
-//     res.status(201).json({
-//       success: true,
-//       message: "A new skill was added successfully.",
-//       img_url: `/uploads/skills/${imagepath}`,
-//     });
-//   } catch (error) {
-//     console.error("Error creating skill:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Database error. Please try again.",
-//     });
-//   }
-// };
-
-
-
-
-
-
-
-
-
-
-
-
-const db = require("../modules/db");
 
 exports.createSkill = async (req, res) => {
   try {
@@ -399,3 +331,61 @@ exports.createSkill = async (req, res) => {
     });
   }
 };
+
+
+// //  Create Skill
+// exports.createSkill = async (req, res) => {
+//   if (!req.body) {
+//     return res.status(400).json({ error: "Form data is missing" });
+//   }
+
+//  if (!req.file) return res.status(400).json({error: "skill imag is requried"})
+
+
+
+//   const { skillname, skilldesc, category, skilllevel } = req.body;
+//   const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
+
+//   // Validation
+//   if (skillname.length < 2 || skillname.length > 50) {
+//     return res.status(400).json({ error: "Skill name must be between 2 and 50 characters." });
+//   }
+//   if (!validChars.test(skillname)) {
+//     return res.status(400).json({ error: "Skill name has invalid characters." });
+//   }
+//   if (skilldesc.length < 10 || skilldesc.length > 500) {
+//     return res.status(400).json({ error: "Description must be between 10 and 500 characters." });
+//   }
+//   if (!validChars.test(skilldesc)) {
+//     return res.status(400).json({ error: "Description has invalid characters." });
+//   }
+//   if (category.length < 2 || category.length > 30) {
+//     return res.status(400).json({ error: "Category must be between 2 and 30 characters." });
+//   }
+//   if (!validChars.test(category)) {
+//     return res.status(400).json({ error: "Category has invalid characters." });
+//   }
+
+//   const user_id = req.user?.id || null;
+//   const imagepath = req.file || req.file.filename;
+
+//   try {
+//     await db.query(
+//       "INSERT INTO skills (title, description, category, level, user_id, skill_img) VALUES ($1, $2, $3, $4, $5, $6)",
+//       [skillname, skilldesc, category, skilllevel, user_id, imagepath]
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "A new skill was added successfully.",
+//       img_url: `/uploads/skills/${imagepath}`,
+//     });
+//   } catch (error) {
+//     console.error("Error creating skill:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Database error. Please try again.",
+//     });
+//   }
+// };
+
