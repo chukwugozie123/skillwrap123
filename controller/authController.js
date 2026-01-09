@@ -299,28 +299,37 @@ function isAuthenticated(req, res, next) {
 
 exports.profile = [
   isAuthenticated,
-  async (req, res) => {
-    try {
-      const result = await db.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
-      const user = result.rows[0];
-      console.log(req.user.id)
-
-      if (!user) {
-        return res.status(404).json({ success: false, error: "User not found" });
-      }
-
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          fullname: user.fullname,
-          username: user.username,
-          email: user.email,
-        },
+exports.getProfile = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized",
       });
-    } catch (err) {
-      console.error("Profile error:", err);
-      res.status(500).json({ success: false, error: "Something went wrong." });
+    }
+
+    const result = await db.query(
+      "SELECT id, fullname, username, email FROM users WHERE id = $1",
+      [req.user.id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Profile error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Something went wrong.",
+    });
     }
   }
 ];

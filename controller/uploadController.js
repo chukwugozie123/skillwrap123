@@ -25,11 +25,19 @@
 
 
 
-
 const db = require("../modules/db");
 
 exports.uploadProfile = async (req, res) => {
   try {
+    // 🔐 Auth guard
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    // 🖼️ File guard
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -39,20 +47,24 @@ exports.uploadProfile = async (req, res) => {
 
     const userId = req.user.id;
 
-    // multer-storage-cloudinary already uploaded the image
-    const imageUrl = req.file.path;       // Cloudinary secure URL
-    const publicId = req.file.filename;   // Cloudinary public_id
+    // ✅ CORRECT Cloudinary fields
+    const imageUrl = req.file.path;
+    const publicId = req.file.public_id;
 
     await db.query(
-      "UPDATE users SET img_url = $1 WHERE id = $2",
-      [imageUrl, userId]
+      `
+      UPDATE users
+      SET img_url = $1,
+          img_public_id = $2
+      WHERE id = $3
+      `,
+      [imageUrl, publicId, userId]
     );
 
     res.status(200).json({
       success: true,
       message: "Successfully updated profile picture",
       imageUrl,
-      publicId,
     });
   } catch (error) {
     console.error("Upload profile error:", error);
