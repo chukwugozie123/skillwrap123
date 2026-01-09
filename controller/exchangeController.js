@@ -171,12 +171,17 @@ exports.getStats = async (req, res) => {
       const createdSkill = await db.query("SELECT COUNT(*) FROM skills WHERE user_id = $1", [userID]);
       const sendRequests = await db.query("SELECT COUNT(*) FROM exchange_skills where from_user_id = $1", [userID])
       const recievedRequests = await db.query("SELECT COUNT(*) FROM exchange_skills where to_user_id = $1", [userID])
+      const succesfullExchnaged = await db.query("SELECT COUNT (*) FROM exchange_skills WHERE exchange_status = 'completed' AND from_user_id = $1", [userID])
+      const canclledExchnaged = await db.query("SELECT COUNT (*) FROM exchange_skills WHERE exchange_status = 'cancelled' AND from_user_id = $1", [userID])
+      
 
       res.status(200).json({
         success: true,
         createdSkill: parseInt(createdSkill.rows[0].count),
         sendRequests: parseInt(sendRequests.rows[0].count),
-        receivedRequests: parseInt(recievedRequests.rows[0].count)
+        receivedRequests: parseInt(recievedRequests.rows[0].count),
+        succesfullExchnage: parseInt(succesfullExchnaged.rows[0].count),
+        canclledExchnaged: parseInt(canclledExchnaged.rows[0].count)
       })
     } catch (error) {
       res.status(500).json(500)({
@@ -297,6 +302,21 @@ exports.getExchangeDetails = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.DeleteExhanage = async (req, res) => {
+    const {exchange_id} = req.body
+  try {
+     await db.query("DELETE FROM exchange_skills WHERE exchange_id = $1", [exchange_id]);
+        
+     res.json({
+        success: true,
+        message: "Deleted succesfully"
+      });
+  } catch (error) {
+    console.error("delete-exchange error:", error);
+    res.status(500).json({ success: false, error: "Failed to delete exhchange." });
+  }
+}
 
 
 // exports.get_exchnage = async (req, res) => {

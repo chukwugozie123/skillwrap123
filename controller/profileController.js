@@ -352,6 +352,9 @@ exports.getUserProfile = async (req, res) => {
       `,
       [user.id]
     );
+    // canclled exchange
+    const canclledExchnaged = await db.query("SELECT COUNT (*) FROM exchange_skills WHERE exchange_status = 'cancelled' AND from_user_id = $1", [user.id])
+      
 
     /* 3️⃣ Skills (NOW INCLUDES user_id ✅) */
     const skillsResult = await db.query(
@@ -427,11 +430,13 @@ exports.getUserProfile = async (req, res) => {
       profile: user,
       stats: {
         successful_exchanges: exchangeResult.rows[0].successful_exchanges,
+        canclledExchnaged: parseInt(canclledExchnaged.rows[0].count),
         overall_rating: overallRatingResult.rows[0].overall_rating,
         total_reviews: overallRatingResult.rows[0].total_reviews,
       },
       skills: skillsWithReviews,
     });
+    console.log(canclledExchnaged)
   } catch (err) {
     console.error("GET /profile/:username error:", err);
     res.status(500).json({ message: "Server error" });
