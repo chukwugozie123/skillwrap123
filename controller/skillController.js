@@ -21,10 +21,17 @@ exports.home = async (req, res) => {
 
 
 //one skill
-
 exports.oneskill = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // ✅ GUARD
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid skill id",
+      });
+    }
 
     const query = `
       SELECT 
@@ -35,20 +42,23 @@ exports.oneskill = async (req, res) => {
         s.level,
         s.skill_img,
         s.created_at,
-
         u.id AS user_id,
         u.username,
         u.fullname
-
       FROM skills s
       JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
     `;
 
-    const result = await db.query(query, [id]);
+    console.log("PARAM ID:", req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: "Skill not found" });
+    const result = await db.query(query, [Number(id)]);
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Skill not found",
+      });
     }
 
     res.status(200).json({
@@ -57,9 +67,13 @@ exports.oneskill = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error fetching skill:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
 
 
 
@@ -303,8 +317,8 @@ exports.createSkill = async (req, res) => {
     await db.query(
       `
       INSERT INTO skills
-      (title, description, category, level, user_id, img_url, img_public_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (title, description, category, level, user_id, img_url)
+      VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         skillname,
@@ -313,7 +327,6 @@ exports.createSkill = async (req, res) => {
         skilllevel,
         user_id,
         imageUrl,
-        publicId,
       ]
     );
 
