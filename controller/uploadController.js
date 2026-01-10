@@ -51,6 +51,10 @@ exports.uploadProfile = async (req, res) => {
     const imageUrl = req.file.path;
     const publicId = req.file.public_id;
 
+    console.log("image:", req.file.public_id);
+    console.log(imageUrl)
+
+
     await db.query(
       `
       UPDATE users

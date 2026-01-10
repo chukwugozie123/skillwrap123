@@ -565,7 +565,7 @@ exports.getUserProfile = async (req, res) => {
       stats: {
         successful_exchanges: exchangeResult.rows[0].successful_exchanges,
         cancelled_exchanges:
-          cancelledExchangeResult.rows[0].cancelled_exchanges,
+        cancelledExchangeResult.rows[0].cancelled_exchanges,
         overall_rating: overallRatingResult.rows[0].overall_rating,
         total_reviews: overallRatingResult.rows[0].total_reviews,
       },

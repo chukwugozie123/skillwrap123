@@ -128,41 +128,34 @@
 
 
 
-
-
-
-
-
-
 const passport = require("passport");
-// const LocalStrategy = require("passport-local").Strategy;
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const LocalStrategy = require("passport-local").Strategy;
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const bcrypt = require("bcrypt");
-const db = require("../modules/db"); // adjust path
+const db = require("../modules/db");
+
+/* ================= LOCAL STRATEGY ================= */
 
 passport.use(
   new LocalStrategy(
     { usernameField: "emailOrUsername", passwordField: "password" },
     async (emailOrUsername, password, done) => {
       try {
-        // Look for user by email OR username
         const result = await db.query(
           "SELECT * FROM users WHERE email = $1 OR username = $1",
           [emailOrUsername]
         );
 
         if (result.rows.length === 0) {
-          console.log('no user found')
+          console.log("❌ No user found");
           return done(null, false, { message: "No user found" });
         }
 
         const user = result.rows[0];
 
-        // Compare password
         const match = await bcrypt.compare(password, user.hash_password);
         if (!match) {
-          console.log('incorrect password')
+          console.log("❌ Incorrect password");
           return done(null, false, { message: "Incorrect password" });
         }
 
@@ -174,6 +167,79 @@ passport.use(
   )
 );
 
+/* ================= GOOGLE STRATEGY ================= */
+
+passport.use(
+  "google",
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+
+      // ✅ MUST POINT TO BACKEND (Render), NOT FRONTEND
+      callbackURL: "https://skillwrap-backend.onrender.com/auth/google/callback",
+
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    async (accessToken, refreshToken, profile, cb) => {
+      try {
+        const email = profile.emails?.[0]?.value;
+        const fullname = profile.displayName;
+        const username = fullname.replace(/\s+/g, "").toLowerCase();
+        const photo = profile.photos?.[0]?.value || null;
+
+        if (!email) {
+          return cb(new Error("Google account has no email"), null);
+        }
+
+        const result = await db.query(
+          "SELECT * FROM users WHERE email = $1",
+          [email]
+        );
+
+        // 🆕 CREATE USER
+        if (result.rows.length === 0) {
+          const insert = await db.query(
+            `
+            INSERT INTO users 
+            (fullname, username, email, hash_password, img_url)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+            `,
+            [fullname, username, email, "google-oauth", photo]
+          );
+
+          return cb(null, insert.rows[0]);
+        }
+
+        // ♻️ EXISTING USER
+        const existingUser = result.rows[0];
+
+        // ✅ FIXED: img_url (NOT photo)
+        if (photo && existingUser.img_url !== photo) {
+          const update = await db.query(
+            `
+            UPDATE users 
+            SET img_url = $1 
+            WHERE id = $2 
+            RETURNING *
+            `,
+            [photo, existingUser.id]
+          );
+
+          return cb(null, update.rows[0]);
+        }
+
+        return cb(null, existingUser);
+      } catch (error) {
+        console.error("Google auth error:", error);
+        cb(error, null);
+      }
+    }
+  )
+);
+
+/* ================= SESSION ================= */
 
 passport.serializeUser((user, done) => {
   console.log("🔐 Serializing user:", user.id);
@@ -185,7 +251,7 @@ passport.deserializeUser(async (id, done) => {
     console.log("🔓 Deserializing user id:", id);
 
     const result = await db.query(
-      "SELECT id, fullname, username, email FROM users WHERE id = $1",
+      "SELECT id, fullname, username, email, img_url FROM users WHERE id = $1",
       [id]
     );
 
@@ -201,23 +267,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-
-module.exports = passport
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+module.exports = passport;
 
 
 

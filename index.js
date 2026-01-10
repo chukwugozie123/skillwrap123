@@ -1,3 +1,5 @@
+
+
 // const express = require("express");
 // const http = require("http");
 // const cors = require("cors");
@@ -48,21 +50,21 @@
 // app.use("/uploads", express.static("uploads"));
 
 // /* ================= SESSION ================= */
-// app.use(
-//   session({
-//     name: "skillwrap.sid",
-//     secret: process.env.SESSION_SECRET || "skillwrap_secret",
-//     resave: false,
-//     saveUninitialized: false,
-//     proxy: true,
-//     cookie: {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-//       maxAge: 1000 * 60 * 60 * 24,
-//     },
-//   })
-// );
+// const sessionMiddleware = session({
+//   name: "skillwrap.sid",
+//   secret: process.env.SESSION_SECRET || "skillwrap_secret",
+//   resave: false,
+//   saveUninitialized: false,
+//   proxy: true,
+//   cookie: {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+//     maxAge: 1000 * 60 * 60 * 24,
+//   },
+// });
+
+// app.use(sessionMiddleware);
 
 // /* ================= PASSPORT ================= */
 // app.use(passport.initialize());
@@ -84,6 +86,13 @@
 //     methods: ["GET", "POST"],
 //     credentials: true,
 //   },
+//   pingTimeout: 60000,       // 🔥 IMPORTANT FOR RENDER
+//   pingInterval: 25000,      // 🔥 IMPORTANT FOR RENDER
+// });
+
+// /* 🔥 SHARE SESSION WITH SOCKET.IO */
+// io.use((socket, next) => {
+//   sessionMiddleware(socket.request, {}, next);
 // });
 
 // io.on("connection", (socket) => {
@@ -92,19 +101,23 @@
 //   /* JOIN ROOM */
 //   socket.on("join-room", ({ room, username }) => {
 //     if (!room || !username) return;
+
 //     socket.join(room);
+
+//     console.log(`👤 ${username} joined ${room}`);
+//     console.log("📦 Current rooms:", [...socket.rooms]);
 
 //     socket.to(room).emit("user_joined", {
 //       message: `${username} joined the exchange`,
 //       timestamp: new Date().toISOString(),
 //     });
-
-//     console.log(`👤 ${username} joined ${room}`);
 //   });
 
 //   /* SEND MESSAGE */
 //   socket.on("message", ({ room, sender, message, imageUrl }) => {
 //     if (!room) return;
+
+//     console.log(`💬 Message in ${room} from ${sender}`);
 
 //     socket.to(room).emit("message", {
 //       sender,
@@ -118,17 +131,19 @@
 //   socket.on("start_exchange", ({ room, startTime, duration }) => {
 //     if (!room) return;
 
+//     console.log(`⏱ Exchange started in ${room}`);
+
 //     io.to(room).emit("start_exchange", {
 //       startTime,
 //       duration,
 //     });
-
-//     console.log(`⏱ Exchange started in ${room}`);
 //   });
 
 //   /* LEAVE ROOM */
 //   socket.on("leave-room", ({ room, username }) => {
 //     socket.leave(room);
+
+//     console.log(`🚪 ${username} left ${room}`);
 
 //     socket.to(room).emit("user_left", {
 //       message: `${username} left the exchange`,
@@ -136,8 +151,12 @@
 //     });
 //   });
 
-//   socket.on("disconnect", () => {
-//     console.log("🔴 Socket disconnected:", socket.id);
+//   socket.on("disconnect", (reason) => {
+//     console.log("🔴 Socket disconnected:", socket.id, reason);
+//   });
+
+//   socket.on("error", (err) => {
+//     console.error("❌ Socket error:", err);
 //   });
 // });
 
@@ -145,6 +164,11 @@
 // server.listen(PORT, () => {
 //   console.log(`🚀 SkillWrapp backend running on port ${PORT}`);
 // });
+
+
+
+
+
 
 
 const express = require("express");
@@ -169,32 +193,40 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
-/* ================= TRUST PROXY (RENDER) ================= */
+/* ================= TRUST PROXY ================= */
 app.set("trust proxy", 1);
 
-/* ================= CORS ================= */
+/* ================= ALLOWED ORIGINS ================= */
 const allowedOrigins = [
   "http://localhost:3000",
   "https://skillwrap2026.vercel.app",
 ];
 
+/* ================= CORS (FIXED) ================= */
 app.use(
   cors({
     origin(origin, callback) {
+      // allow server-to-server & same-origin
       if (!origin) return callback(null, true);
-      if (!allowedOrigins.includes(origin)) {
-        return callback(new Error("CORS blocked"), false);
+
+      // allow any vercel preview deployment
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
       }
-      return callback(null, true);
+
+      // ❌ DO NOT THROW ERROR (causes HTML response)
+      return callback(null, false);
     },
     credentials: true,
   })
 );
 
-/* ================= MIDDLEWARE ================= */
+/* ================= BODY PARSERS ================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static("uploads"));
 
 /* ================= SESSION ================= */
 const sessionMiddleware = session({
@@ -230,14 +262,13 @@ app.use("/", notificationRoute);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
     credentials: true,
   },
-  pingTimeout: 60000,       // 🔥 IMPORTANT FOR RENDER
-  pingInterval: 25000,      // 🔥 IMPORTANT FOR RENDER
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
-/* 🔥 SHARE SESSION WITH SOCKET.IO */
+/* SHARE SESSION WITH SOCKET.IO */
 io.use((socket, next) => {
   sessionMiddleware(socket.request, {}, next);
 });
@@ -245,26 +276,18 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log("🔌 Socket connected:", socket.id);
 
-  /* JOIN ROOM */
   socket.on("join-room", ({ room, username }) => {
     if (!room || !username) return;
 
     socket.join(room);
-
-    console.log(`👤 ${username} joined ${room}`);
-    console.log("📦 Current rooms:", [...socket.rooms]);
-
     socket.to(room).emit("user_joined", {
       message: `${username} joined the exchange`,
       timestamp: new Date().toISOString(),
     });
   });
 
-  /* SEND MESSAGE */
   socket.on("message", ({ room, sender, message, imageUrl }) => {
     if (!room) return;
-
-    console.log(`💬 Message in ${room} from ${sender}`);
 
     socket.to(room).emit("message", {
       sender,
@@ -274,11 +297,8 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* START EXCHANGE TIMER */
   socket.on("start_exchange", ({ room, startTime, duration }) => {
     if (!room) return;
-
-    console.log(`⏱ Exchange started in ${room}`);
 
     io.to(room).emit("start_exchange", {
       startTime,
@@ -286,12 +306,8 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* LEAVE ROOM */
   socket.on("leave-room", ({ room, username }) => {
     socket.leave(room);
-
-    console.log(`🚪 ${username} left ${room}`);
-
     socket.to(room).emit("user_left", {
       message: `${username} left the exchange`,
       timestamp: new Date().toISOString(),
@@ -301,13 +317,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", (reason) => {
     console.log("🔴 Socket disconnected:", socket.id, reason);
   });
-
-  socket.on("error", (err) => {
-    console.error("❌ Socket error:", err);
-  });
 });
 
-/* ================= START SERVER ================= */
+/* ================= START ================= */
 server.listen(PORT, () => {
-  console.log(`🚀 SkillWrapp backend running on port ${PORT}`);
+  console.log(`🚀 SkillWrap backend running on port ${PORT}`);
 });
