@@ -1,141 +1,3 @@
-// const passport = require('passport')
-// const db = require("../modules/db");
-// const bcrypt = require('bcrypt');
-
-// const saltRounds = 10;
-// // get signup route
-// exports.getAuthSignup = async (req, res) => {
-//     res.render('sign.ejs');
-// }
-
-// // get login route
-// exports.getAuthLogin = async (req, res) => {
-//     res.render('login.ejs');
-// }
-
-// // post signup
-// exports.authSignup = async (req, res) => {
-//        const { fullname, username, email, password } = req.body;
-//     console.log(fullname, username,email, password)
-//                 try {
-//             const result = await db.query("SELECT * FROM users WHERE email = $1 OR username = $2", [
-//                 email, username
-//             ]);
-    
-//             if (result.rows.length > 0) {
-//                 res.render("signup.ejs", { error: "User already exists with this email/username." });
-//             } else {
-//                 // Hashing the password
-//                 bcrypt.hash(password, saltRounds, async (err, hash) => {
-//                     if (err) {
-//                         console.error("Error hashing password:", err);
-//                         return res.render("signup.ejs", { error: "An error occurred during signup." });
-//                     }
-    
-//                     try {
-//                         const result = await db.query(
-//                             "INSERT INTO users (fullname, username, email, hash_password) VALUES ($1, $2, $3, $4) RETURNING *",
-//                             [fullname, username, email, hash]
-//                         );
-//                             // res.redirect("/add")
-//                             // Start a new session and save the user data
-//                         const user = result.rows[0];
-//                         req.login(user, (err) => {
-//                           // console.log("success");
-//                           if (err) return console.log(err);
-                          
-//                           res.redirect("/dashboard");
-//                         })
-//                     } catch (err) {
-//                         console.error("Error inserting user:", err);
-//                         res.render("signup.ejs", { error: "Something went wrong with the database. Please try again." });
-//                     }
-//                 });
-//             }
-//         } catch (err) {
-//             console.error("Signup error:", err);
-//             res.render("signup.ejs", { error: "Something went wrong." });
-//         }
-// }
-
-
-
-
-
-// exports.dashboard = async(req, res) => {
-//          const userId = req.user.id
-//          console.log(userId)
-//          const users = req.user
-//          console.log(users)
-//     try {
-//         const result = await db.query("SELECT COUNT(*) FROM skills WHERE user_id = $1", [userId]);
-//            const bookCount = result.rows[0].count;
-        
-//     res.render("dashboard.ejs", {
-//         user: users,
-//         bookCount
-//     })
-//     } catch (error) {
-//         console.error(error)
-//         res.render("dashboard", {error: "something went wrong"})
-//     }
-// }
-
-// exports.AuthLogin = passport.authenticate("local", {
-//         successRedirect: "/dashboard",
-//         failureRedirect: "/login",
-//       })
-
-// exports.logout = async (req,res)=> {
-//     req.session.destroy(err =>{
-//     if (err) {
-//       console.log(err);
-//       res.redirect("/dashboard")// stay on profile
-//     }else{
-//        res.redirect("/")
-//     }
-//   })
-// }
-
-// // PROFILE ROUTE
-// exports.profile = async (req, res) => {
-//   try {
-//     if (!req.user) {
-//        return res.redirect("/login");
-//     }
-
-//     const result = await db.query(
-//       "SELECT * FROM users WHERE id = $1",
-//       [req.user.id]
-//     );
-
-//     const user = result.rows[0]// get d first rows
-
-
-//     if (!user) {
-//       return res.render("profile", { error: "User not found" });
-//     }
-
-//     // Pass user data to profile.ejs
-//     res.render("profile", { user });
-//   } catch (error) {
-//     console.error(error);
-//     res.render("profile", { error: "Something went wrong." });
-//   }
-
-// };
-
-
-
-
-
-
-
-
-
-
-
-
 const passport = require("passport");
 const db = require("../modules/db");
 const bcrypt = require("bcrypt");
@@ -146,66 +8,117 @@ const saltRounds = 10;
 
 
 // post/signup
-
 exports.authSignup = async (req, res) => {
-  const { fullname, username, email, password, verified } = req.body;
+  const { fullname, username, email, password } = req.body;
 
   try {
-    // Check if user exists by email or username
+    // 1️⃣ Check if user already exists
     const existing = await db.query(
-      "SELECT * FROM users WHERE email = $1 OR username = $2",
+      "SELECT id FROM users WHERE email = $1 OR username = $2",
       [email, username]
     );
 
     if (existing.rows.length > 0) {
-      console.log("User exists");
       return res.status(400).json({
         success: false,
-        error: "User already exists with this email/username.",
+        error: "User already exists with this email or username",
       });
     }
 
-    // Hash password
-    const hash = await bcrypt.hash(password, saltRounds);
+    // 2️⃣ Hash password
+    const hash = await bcrypt.hash(password, 10);
 
-    // Insert user into database
+    // 3️⃣ Create user as UNVERIFIED
     const result = await db.query(
-      "INSERT INTO users (fullname, username, email, hash_password, verified) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [fullname, username, email, hash, verified]
+      `
+      INSERT INTO users (fullname, username, email, hash_password, verified)
+      VALUES ($1, $2, $3, $4, false)
+      RETURNING id, email
+      `,
+      [fullname, username, email, hash]
     );
 
     const user = result.rows[0];
 
-    // Log user in using session (assuming Passport.js for session management)
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          error: "Login after signup failed.",
-        });
-      }
+    // 4️⃣ Send OTP email
+    await sendOtpVerificationEmail(user.id, user.email);
 
-      console.log("Signup successful");
-
-
-      // verifyemailController.sendOtpVerificationEmail(result, res)
-
-      return res.status(201).json({
-        success: true,
-        message: "Signup successful",
-        user: {
-          id: user.id,
-          fullname: user.fullname,
-          username: user.username,
-          email: user.email,
-        },
-      });
+    // 5️⃣ Respond (NO SESSION)
+    return res.status(201).json({
+      success: true,
+      message: "Signup successful. Please verify your email.",
+      email: user.email,
     });
+
   } catch (err) {
     console.error("Signup error:", err);
-    return res.status(500).json({ success: false, error: "Something went wrong." });
+    return res.status(500).json({
+      success: false,
+      error: "Something went wrong",
+    });
   }
 };
+
+
+// exports.authSignup = async (req, res) => {
+//   const { fullname, username, email, password, verified } = req.body;
+
+//   try {
+//     // Check if user exists by email or username
+//     const existing = await db.query(
+//       "SELECT * FROM users WHERE email = $1 OR username = $2",
+//       [email, username]
+//     );
+
+//     if (existing.rows.length > 0) {
+//       console.log("User exists");
+//       return res.status(400).json({
+//         success: false,
+//         error: "User already exists with this email/username.",
+//       });
+//     }
+
+//     // Hash password
+//     const hash = await bcrypt.hash(password, saltRounds);
+
+//     // Insert user into database
+//     const result = await db.query(
+//       "INSERT INTO users (fullname, username, email, hash_password, verified) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+//       [fullname, username, email, hash, verified]
+//     );
+
+//     const user = result.rows[0];
+
+//     // Log user in using session (assuming Passport.js for session management)
+//     req.login(user, (err) => {
+//       if (err) {
+//         return res.status(500).json({
+//           success: false,
+//           error: "Login after signup failed.",
+//         });
+//       }
+
+//       console.log("Signup successful");
+
+
+//       // verifyemailController.sendOtpVerificationEmail(result, res)
+
+//       return res.status(201).json({
+//         success: true,
+//         message: "Signup successful",
+//         user: {
+//           id: user.id,
+//           fullname: user.fullname,
+//           username: user.username,
+//           email: user.email,
+//         },
+//       });
+//     });
+//   } catch (err) {
+//     console.error("Signup error:", err);
+//     return res.status(500).json({ success: false, error: "Something went wrong." });
+//   }
+// };
 
 
 // POST /api/login
