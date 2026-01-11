@@ -139,6 +139,7 @@
 const passport = require("passport");
 const db = require("../modules/db");
 const bcrypt = require("bcrypt");
+// const verifyemailController = require("../controller/verifyemailController");
 
 
 const saltRounds = 10;
@@ -147,7 +148,7 @@ const saltRounds = 10;
 // post/signup
 
 exports.authSignup = async (req, res) => {
-  const { fullname, username, email, password } = req.body;
+  const { fullname, username, email, password, verified } = req.body;
 
   try {
     // Check if user exists by email or username
@@ -169,8 +170,8 @@ exports.authSignup = async (req, res) => {
 
     // Insert user into database
     const result = await db.query(
-      "INSERT INTO users (fullname, username, email, hash_password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [fullname, username, email, hash]
+      "INSERT INTO users (fullname, username, email, hash_password, verified) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [fullname, username, email, hash, verified]
     );
 
     const user = result.rows[0];
@@ -185,6 +186,10 @@ exports.authSignup = async (req, res) => {
       }
 
       console.log("Signup successful");
+
+
+      // verifyemailController.sendOtpVerificationEmail(result, res)
+
       return res.status(201).json({
         success: true,
         message: "Signup successful",

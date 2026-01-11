@@ -315,7 +315,7 @@ console.log("image:", req.file.public_id);
     await db.query(
       `
       INSERT INTO skills
-      (title, description, category, level, user_id, img_url, img_public_id)
+      (title, description, category, level, user_id, img_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       `,
       [
@@ -325,7 +325,6 @@ console.log("image:", req.file.public_id);
         skilllevel,
         req.user.id,
         imageUrl,
-        publicId,
       ]
     );
 

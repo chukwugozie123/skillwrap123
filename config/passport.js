@@ -177,7 +177,7 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 
       // ✅ MUST POINT TO BACKEND (Render), NOT FRONTEND
-      callbackURL: "https://skillwrap-backend.onrender.com/auth/google/callback",
+      callbackURL: "https://skillwrap-backend.onrender.com/auth/google/profile",
 
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
@@ -260,7 +260,7 @@ passport.deserializeUser(async (id, done) => {
       return done(null, false);
     }
 
-    console.log("✅ Deserialized user:", result.rows[0]);
+    // console.log("✅ Deserialized user:", result.rows[0]);
     done(null, result.rows[0]);
   } catch (err) {
     done(err);
