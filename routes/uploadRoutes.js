@@ -13,7 +13,7 @@ router.post(
     next();
   },
   upload.single("profile"),
-  uploadProfile
+  uploadController.uploadProfile
 );
 
 
