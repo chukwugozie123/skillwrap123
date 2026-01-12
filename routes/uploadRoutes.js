@@ -12,7 +12,7 @@ router.post(
     console.log("HEADERS:", req.headers["content-type"]);
     next();
   },
-  upload.single("profile"),
+  upload.single("image"),
   uploadController.uploadProfile
 );
 
