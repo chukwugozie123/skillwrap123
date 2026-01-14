@@ -75,12 +75,12 @@ exports.authLogin = (req, res, next) => {
     }
 
     /* 🚫 BLOCK LOGIN IF EMAIL NOT VERIFIED */
-    if (!user.email_verified) {
-      return res.status(403).json({
-        error: "EMAIL_NOT_VERIFIED",
-        email: user.email,
-      });
-    }
+    // if (!user.email_verified) {
+    //   return res.status(403).json({
+    //     error: "EMAIL_NOT_VERIFIED",
+    //     email: user.email,
+    //   });
+    // }
 
     req.login(user, (err) => {
       if (err) {
