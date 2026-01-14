@@ -23,3 +23,4 @@ module.exports = transporter;
 // ADD COLUMN otp_hash TEXT,
 // ADD COLUMN otp_expires_at BIGINT,
 // ADD COLUMN email_verified BOOLEAN DEFAULT false;
+// ADD COLUMN mode TEXT DEFAULT NULL;

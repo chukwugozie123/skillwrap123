@@ -177,6 +177,7 @@ const cors = require("cors");
 const session = require("express-session");
 const passport = require("passport");
 const { Server } = require("socket.io");
+const runMigrations = require("./modules/migrate");
 require("dotenv").config();
 require("./config/passport");
 
@@ -193,6 +194,9 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
+
+
+
 /* ================= TRUST PROXY ================= */
 app.set("trust proxy", 1);
 
@@ -201,6 +205,29 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://skillwrap2026.vercel.app",
 ];
+
+
+const multer = require("multer");
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  if (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Internal server error",
+    });
+  }
+
+  next();
+});
+
 
 /* ================= CORS (FIXED) ================= */
 app.use(
@@ -320,6 +347,17 @@ io.on("connection", (socket) => {
 });
 
 /* ================= START ================= */
-server.listen(PORT, () => {
-  console.log(`🚀 SkillWrap backend running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await runMigrations(); // ✅ SAFE HERE
+
+    server.listen(PORT, () => {
+      console.log(`🚀 SkillWrap backend running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err);
+    process.exit(1); // stop app if migrations fail
+  }
+};
+
+startServer();

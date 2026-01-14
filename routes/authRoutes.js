@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controller/authController");
 const {ensureAuth} = require("../middleware/auth");
-const { route } = require('./skillRoutes');
+// const { route } = require('./skillRoutes');
 
 const API_URL = 'https://skillwrap2026.vercel.app'
 

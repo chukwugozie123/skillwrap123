@@ -41,7 +41,7 @@ exports.authSignup = async (req, res) => {
     const user = result.rows[0];
 
     // 4️⃣ Send OTP email
-    await sendOtpVerificationEmail(user.id, user.email);
+    // await sendOtpVerificationEmail(user.id, user.email);
 
     // 5️⃣ Respond (NO SESSION)
     return res.status(201).json({
@@ -60,89 +60,35 @@ exports.authSignup = async (req, res) => {
 };
 
 
-// exports.authSignup = async (req, res) => {
-//   const { fullname, username, email, password, verified } = req.body;
-
-//   try {
-//     // Check if user exists by email or username
-//     const existing = await db.query(
-//       "SELECT * FROM users WHERE email = $1 OR username = $2",
-//       [email, username]
-//     );
-
-//     if (existing.rows.length > 0) {
-//       console.log("User exists");
-//       return res.status(400).json({
-//         success: false,
-//         error: "User already exists with this email/username.",
-//       });
-//     }
-
-//     // Hash password
-//     const hash = await bcrypt.hash(password, saltRounds);
-
-//     // Insert user into database
-//     const result = await db.query(
-//       "INSERT INTO users (fullname, username, email, hash_password, verified) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-//       [fullname, username, email, hash, verified]
-//     );
-
-//     const user = result.rows[0];
-
-//     // Log user in using session (assuming Passport.js for session management)
-//     req.login(user, (err) => {
-//       if (err) {
-//         return res.status(500).json({
-//           success: false,
-//           error: "Login after signup failed.",
-//         });
-//       }
-
-//       console.log("Signup successful");
-
-
-//       // verifyemailController.sendOtpVerificationEmail(result, res)
-
-//       return res.status(201).json({
-//         success: true,
-//         message: "Signup successful",
-//         user: {
-//           id: user.id,
-//           fullname: user.fullname,
-//           username: user.username,
-//           email: user.email,
-//         },
-//       });
-//     });
-//   } catch (err) {
-//     console.error("Signup error:", err);
-//     return res.status(500).json({ success: false, error: "Something went wrong." });
-//   }
-// };
-
-
-// POST /api/login
+// POST /auth/login
 exports.authLogin = (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) {
       console.error("❌ Passport error:", err);
-      return res.status(500).json({ success: false });
+      return res.status(500).json({ error: "Server error" });
     }
 
     if (!user) {
-      console.log("❌ Login failed");
-      return res.status(401).json({ success: false, error: "Invalid login" });
+      return res.status(401).json({
+        error: "Invalid email/username or password",
+      });
+    }
+
+    /* 🚫 BLOCK LOGIN IF EMAIL NOT VERIFIED */
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: "EMAIL_NOT_VERIFIED",
+        email: user.email,
+      });
     }
 
     req.login(user, (err) => {
       if (err) {
         console.error("❌ req.login error:", err);
-        return res.status(500).json({ success: false });
+        return res.status(500).json({ error: "Login failed" });
       }
 
-      console.log("✅ Logged in user:", req.user);
-
-      res.json({
+      return res.json({
         success: true,
         message: "Login successful",
         user: {
@@ -156,34 +102,8 @@ exports.authLogin = (req, res, next) => {
   })(req, res, next);
 };
 
-// exports.authLogin = (req, res, next) => {
-//   passport.authenticate("local", (err, user, info) => {
-//     if (err) return res.status(500).json({ success: false, error: err });
-//     if (!user)
-//       return res
-//         .status(401)
-//         .json({ success: false, error:  "Invalid login" }),
-//         console.log('failed');
 
-//     req.login(user, (err) => {
-//       if (err)
-//         return res.status(500).json({ success: false, error: "Login failed." });
-//       res.json({
-//         success: true,
-//         message: "Login successful",
-//         user: {
-//           id: user.id,
-//           fullname: user.fullname,
-//           username: user.username,
-//           email: user.email,
-//         },
-//       });
-//        console.log('success')
-//     });
-//   })(req, res, next);
-// };
-
-// GET /api/dashboard
+// /api/dashboard
 exports.dashboard = async (req, res) => {
   try {
     if (!req?.user) {
