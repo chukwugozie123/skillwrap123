@@ -338,7 +338,6 @@ exports.resendEmailOtp = async (req, res) => {
 };
 
 
-
 exports.setMode = async (req, res) => {
   try {
     const { mode } = req.body;
@@ -351,19 +350,19 @@ exports.setMode = async (req, res) => {
     }
 
     const result = await db.query(
-      "UPDATE users SET mode = $1 WHERE id = $2",
+      "UPDATE users SET mode = $1 WHERE id = $2 RETURNING mode",
       [mode, id]
     );
 
-    if (result.rowCount > 0) {
-      return res.status(200).json({
-        success: true,
-        message: "Successfully added mode",
+    if (result.rowCount === 0) {
+      return res.status(400).json({
+        message: "Failed to add mode",
       });
     }
 
-    return res.status(400).json({
-      message: "Failed to add mode",
+    return res.status(200).json({
+      success: true,
+      mode: result.rows[0].mode,
     });
   } catch (error) {
     console.error(error);
