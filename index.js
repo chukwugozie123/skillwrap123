@@ -189,6 +189,7 @@ const uploadRoute = require("./routes/uploadRoutes");
 const notificationRoute = require("./routes/notifiacationRoute");
 const reviewRoute = require("./routes/reviewRoute");
 const profileRoute = require("./routes/profileRoute");
+const VeryemailRoute = require("./routes/verifyroutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -284,6 +285,7 @@ app.use("/", uploadRoute);
 app.use("/", reviewRoute);
 app.use("/", profileRoute);
 app.use("/", notificationRoute);
+app.use("/", VeryemailRoute);
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
