@@ -171,10 +171,9 @@
 
 
 
-
-
-
-
+const db = require("../modules/db");
+const bcrypt = require("bcrypt");
+const transporter = require("../config/mailer");
 
 
 exports.sendOtpVerificationEmail = async (req, res) => {
