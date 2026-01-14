@@ -339,34 +339,37 @@ exports.resendEmailOtp = async (req, res) => {
 };
 
 
+
 exports.setMode = async (req, res) => {
- try {
-   const { mode } = req.body
-   const { id } = req.user.id
+  try {
+    const { mode } = req.body;
+    const id = req.user?.id;
 
-   if (!id) {
-    res.status(401).json({
-      message: "Not Authenticated"
-    })
-    return;
-   }
+    if (!id) {
+      return res.status(401).json({
+        message: "Not authenticated",
+      });
+    }
 
-   const res = await db.query("UPDATE users SET mode = $1 WHERE id = $2", 
-    [mode, id]
-   )
+    const result = await db.query(
+      "UPDATE users SET mode = $1 WHERE id = $2",
+      [mode, id]
+    );
 
-   if (res.ok) {
-    res.status(200).json({
-      success: true,
-      message: "Succesfully added mode"
-    })
-   } else {
-    res.status(400).json({
-      message: "Falied to add mode"
-    })
-   }
- } catch (error) {
+    if (result.rowCount > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Successfully added mode",
+      });
+    }
+
+    return res.status(400).json({
+      message: "Failed to add mode",
+    });
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Failed to add mode..." });
- }
-}
+    return res.status(500).json({
+      error: "Failed to add mode...",
+    });
+  }
+};
