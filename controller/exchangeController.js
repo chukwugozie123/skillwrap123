@@ -16,10 +16,10 @@ exports.exchange = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_offered_id, skill_requested_id)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_offered_id, skill_requested_id, mode)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [fromUserid, toUserId, offeredSkillId, skillRequestedId]
+      [fromUserid, toUserId, offeredSkillId, skillRequestedId, 'exchangubf']
     );
 
     res.status(201).json({
@@ -33,7 +33,38 @@ exports.exchange = async (req, res) => {
 
 }
 
-  
+
+exports.exchange_learn = async (req, res) => {
+  const { toUserId, skillRequestedId, note} = req.body;
+
+  const fromUserid = req.user?.id; // ✅ from passport
+  console.log("checking field", fromUserid, toUserId, skillRequestedId)
+
+  if (!fromUserid || !toUserId || !skillRequestedId) {
+    return res.status(400).json({
+      message: "Please fill in all fields...",
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_requested_id, note, mode)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [fromUserid, toUserId, skillRequestedId, note, 'learning']
+    );
+
+    res.status(201).json({
+      success: true,
+      request: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to send request" });
+  }
+
+}
+
 
 /**
  * ✅ Get all exchange requests SENT by the current user.

@@ -4,6 +4,7 @@ const exchangeController = require("../controller/exchangeController.js")
 const {ensureAuth} = require("../middleware/auth");
 
 router.post("/exchange-skill", ensureAuth, exchangeController.exchange)
+router.post("/learn-skill", ensureAuth, exchangeController.exchange_learn)
 router.post("/exchange/sent", ensureAuth, exchangeController.getSentRequests)
 router.post("/exchange/recieved", ensureAuth, exchangeController.getReceivedRequests)
 router.get("/stats",ensureAuth, exchangeController.getStats)

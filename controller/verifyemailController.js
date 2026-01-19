@@ -363,6 +363,7 @@ exports.setMode = async (req, res) => {
     return res.status(200).json({
       success: true,
       mode: result.rows[0].mode,
+      // console.log("sixxwaadullr ssws mosw ")
     });
   } catch (error) {
     console.error(error);
