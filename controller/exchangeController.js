@@ -65,9 +65,12 @@ exports.exchange_learn = async (req, res) => {
 
 }
 
+// ==================== EXCHANGE CONTROLLER ====================
+
 exports.getSentRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId)
+    return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -78,7 +81,7 @@ exports.getSentRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es."mode",
+        es."mode" AS mode,
         es.note,
         es.created_at,
 
@@ -87,7 +90,7 @@ exports.getSentRequests = async (req, res) => {
         u_to.fullname AS to_fullname,
 
         -- Skill titles
-        s_offered.title   AS skill_offered_title,
+        s_offered.title AS skill_offered_title,
         s_requested.title AS requested_skill_title
 
       FROM exchange_skills es
@@ -120,7 +123,8 @@ exports.getSentRequests = async (req, res) => {
 
 exports.getReceivedRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId)
+    return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -131,7 +135,7 @@ exports.getReceivedRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es."mode",
+        es."mode" AS mode,
         es.note,
         es.created_at,
 
@@ -140,7 +144,7 @@ exports.getReceivedRequests = async (req, res) => {
         u_from.fullname AS from_fullname,
 
         -- Skill titles
-        s_offered.title   AS skill_offered_title,
+        s_offered.title AS skill_offered_title,
         s_requested.title AS requested_skill_title
 
       FROM exchange_skills es
