@@ -251,7 +251,18 @@ passport.deserializeUser(async (id, done) => {
     console.log("🔓 Deserializing user id:", id);
 
     const result = await db.query(
-      "SELECT id, fullname, username, email, img_url FROM users WHERE id = $1",
+      `
+      SELECT 
+        id,
+        fullname,
+        username,
+        email,
+        img_url,
+        mode,
+        created_at
+      FROM users
+      WHERE id = $1
+      `,
       [id]
     );
 
@@ -260,12 +271,12 @@ passport.deserializeUser(async (id, done) => {
       return done(null, false);
     }
 
-    // console.log("✅ Deserialized user:", result.rows[0]);
     done(null, result.rows[0]);
   } catch (err) {
     done(err);
   }
 });
+
 
 module.exports = passport;
 
