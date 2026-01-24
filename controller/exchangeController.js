@@ -64,15 +64,10 @@ exports.exchange_learn = async (req, res) => {
   }
 
 }
-/**
- * ✅ Get all exchange requests SENT by the current user
- * Includes mode + note
- */
+
 exports.getSentRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -83,7 +78,7 @@ exports.getSentRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es.mode,
+        es."mode",
         es.note,
         es.created_at,
 
@@ -123,15 +118,9 @@ exports.getSentRequests = async (req, res) => {
 };
 
 
-/**
- * ✅ Get all exchange requests RECEIVED by the current user
- * Includes mode + note
- */
 exports.getReceivedRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
+  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -142,7 +131,7 @@ exports.getReceivedRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es.mode,
+        es."mode",
         es.note,
         es.created_at,
 
@@ -180,6 +169,7 @@ exports.getReceivedRequests = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch received requests" });
   }
 };
+
 
 
 //get number 
