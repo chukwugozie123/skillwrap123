@@ -60,6 +60,17 @@ CREATE TABLE reviews (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS otp_hash TEXT,
+ADD COLUMN IF NOT EXISTS otp_expires_at BIGINT,
+ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT NULL;
+
+
+ALTER TABLE exchange_skills
+ADD  COLUMN IF NOT EXISTS mode TEXT,
+ADD  COLUMN IF NOT EXISTS note TEXT,
+
 -- join table
 SELECT fullname, username, title, description, category
 FROM users

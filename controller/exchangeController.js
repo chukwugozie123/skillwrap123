@@ -3,7 +3,7 @@ const db = require("../modules/db");
 
 // Exchange Skill Controller
 exports.exchange = async (req, res) => {
-  const { toUserId, skillRequestedId, offeredSkillId } = req.body;
+  const { toUserId, skillRequestedId, offeredSkillId, note } = req.body;
 
   const fromUserid = req.user?.id; // ✅ from passport
   console.log("test", fromUserid, toUserId, skillRequestedId, offeredSkillId)
@@ -16,10 +16,10 @@ exports.exchange = async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_offered_id, skill_requested_id, mode)
+      `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_offered_id, skill_requested_id, note, mode)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [fromUserid, toUserId, offeredSkillId, skillRequestedId, 'exchangubf']
+      [fromUserid, toUserId, offeredSkillId, skillRequestedId, note,'exchange']
     );
 
     res.status(201).json({
@@ -64,15 +64,15 @@ exports.exchange_learn = async (req, res) => {
   }
 
 }
-
-
 /**
- * ✅ Get all exchange requests SENT by the current user.
- * Joins exchange_skills with users and skills to show detailed info.
+ * ✅ Get all exchange requests SENT by the current user
+ * Includes mode + note
  */
 exports.getSentRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
     const query = `
@@ -83,6 +83,8 @@ exports.getSentRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
+        es.mode,
+        es.note,
         es.created_at,
 
         -- Receiver info
@@ -121,15 +123,15 @@ exports.getSentRequests = async (req, res) => {
 };
 
 
-
-//   Get All Requests Received by Current User
- /**
- * ✅ Get all exchange requests RECEIVED by the current user.
- * Joins with sender info and both skill titles.
+/**
+ * ✅ Get all exchange requests RECEIVED by the current user
+ * Includes mode + note
  */
 exports.getReceivedRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
     const query = `
@@ -140,6 +142,8 @@ exports.getReceivedRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
+        es.mode,
+        es.note,
         es.created_at,
 
         -- Sender info
@@ -176,21 +180,6 @@ exports.getReceivedRequests = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch received requests" });
   }
 };
-
-
-// // 
-// -- exchange_skills table
-// CREATE TABLE exchange_skills (
-// 	id SERIAL PRIMARY KEY, 
-// 	from_user_id INT REFERENCES users(id), -- The user who wants to exchange skill
-// 	to_user_id INTEGER REFERENCES users(id), -- the user who is requested to exchange
-// 	skill_offered_id INT REFERENCES skills(id), --the skill the user is offering
-// 	skill_requested_id INTEGER REFERENCES skills(id), -- the skill the they want in exchange
-// 	status VARCHAR(20) DEFAULT 'pending', -- status
-// 	Created_at TIMESTAMP DEFAULT NOW()
-// );
-
-// see the updated exchanage table  schema soo now rewrite the sql query so it the skill_offered_id  do u understand it rewrite the  3 section oooo
 
 
 //get number 

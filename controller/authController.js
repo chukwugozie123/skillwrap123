@@ -147,7 +147,7 @@ exports.getProfile = async (req, res) => {
     }
 
     const result = await db.query(
-      "SELECT id, fullname, username, email FROM users WHERE id = $1",
+      "SELECT * FROM users WHERE id = $1",
       [req.user.id]
     );
 
