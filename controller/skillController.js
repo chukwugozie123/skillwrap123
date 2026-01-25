@@ -256,22 +256,35 @@ exports.edit_skill = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to updated skill." });  
   }
 }
-
 // delete skill
 exports.delete_skill = async (req, res) => {
-  const {skillId} = req.params
+  const { skillId } = req.params;
+
   try {
-     await db.query("DELETE FROM skills WHERE id = $1", [skillId]);
-        
-     res.json({
-        success: true,
-        message: "Deleted succesfully"
-      });
+    await db.query("DELETE FROM skills WHERE id = $1", [skillId]);
+
+    res.json({
+      success: true,
+      message: "Deleted successfully",
+    });
   } catch (error) {
     console.error("delete-skill error:", error);
-    res.status(500).json({ success: false, error: "Failed to delete skill." });
+
+    // Check if it's a foreign key violation
+    if (error.code === "23503") {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Cannot delete this skill because it is being used in active exchanges. Please remove it from exchanges first.",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete skill.",
+    });
   }
-}
+};
 
 exports.createSkill = async (req, res) => {
   try {

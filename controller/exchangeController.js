@@ -64,13 +64,11 @@ exports.exchange_learn = async (req, res) => {
   }
 
 }
-
 // ==================== EXCHANGE CONTROLLER ====================
 
 exports.getSentRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId)
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -81,7 +79,8 @@ exports.getSentRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es."mode" AS mode,
+        es.exchange_status,
+        es.mode,
         es.note,
         es.created_at,
 
@@ -94,37 +93,24 @@ exports.getSentRequests = async (req, res) => {
         s_requested.title AS requested_skill_title
 
       FROM exchange_skills es
-      JOIN users u_to 
-        ON es.to_user_id = u_to.id
-
-      LEFT JOIN skills s_offered 
-        ON s_offered.id = es.skill_offered_id
-
-      LEFT JOIN skills s_requested 
-        ON s_requested.id = es.skill_requested_id
-
+      JOIN users u_to ON es.to_user_id = u_to.id
+      LEFT JOIN skills s_offered ON s_offered.id = es.skill_offered_id
+      LEFT JOIN skills s_requested ON s_requested.id = es.skill_requested_id
       WHERE es.from_user_id = $1
       ORDER BY es.created_at DESC;
     `;
 
     const result = await db.query(query, [currentUserId]);
-
-    res.status(200).json({
-      success: true,
-      total: result.rows.length,
-      requests: result.rows,
-    });
+    res.status(200).json({ success: true, total: result.rows.length, requests: result.rows });
   } catch (error) {
     console.error("❌ Error fetching sent requests:", error);
     res.status(500).json({ message: "Failed to fetch sent requests" });
   }
 };
 
-
 exports.getReceivedRequests = async (req, res) => {
   const currentUserId = req.user?.id;
-  if (!currentUserId)
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!currentUserId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
     const query = `
@@ -135,7 +121,8 @@ exports.getReceivedRequests = async (req, res) => {
         es.skill_offered_id,
         es.skill_requested_id,
         es.status,
-        es."mode" AS mode,
+        es.exchange_status,
+        es.mode,
         es.note,
         es.created_at,
 
@@ -148,26 +135,15 @@ exports.getReceivedRequests = async (req, res) => {
         s_requested.title AS requested_skill_title
 
       FROM exchange_skills es
-      JOIN users u_from 
-        ON es.from_user_id = u_from.id
-
-      LEFT JOIN skills s_offered 
-        ON s_offered.id = es.skill_offered_id
-
-      LEFT JOIN skills s_requested 
-        ON s_requested.id = es.skill_requested_id
-
+      JOIN users u_from ON es.from_user_id = u_from.id
+      LEFT JOIN skills s_offered ON s_offered.id = es.skill_offered_id
+      LEFT JOIN skills s_requested ON s_requested.id = es.skill_requested_id
       WHERE es.to_user_id = $1
       ORDER BY es.created_at DESC;
     `;
 
     const result = await db.query(query, [currentUserId]);
-
-    res.status(200).json({
-      success: true,
-      total: result.rows.length,
-      requests: result.rows,
-    });
+    res.status(200).json({ success: true, total: result.rows.length, requests: result.rows });
   } catch (error) {
     console.error("❌ Error fetching received requests:", error);
     res.status(500).json({ message: "Failed to fetch received requests" });
@@ -320,7 +296,7 @@ exports.getExchangeDetails = async (req, res) => {
 exports.DeleteExhanage = async (req, res) => {
     const {exchange_id} = req.body
   try {
-     await db.query("DELETE FROM exchange_skills WHERE exchange_id = $1", [exchange_id]);
+     await db.query("DELETE FROM exchange_skills WHERE id = $1", [exchange_id]);
         
      res.json({
         success: true,

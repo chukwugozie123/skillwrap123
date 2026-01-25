@@ -31,7 +31,11 @@ CREATE TABLE exchange_skills (
 	status VARCHAR(20) DEFAULT 'pending', -- status,
   	exchange_status VARCHAR(20) DEFAULT 'in progress', 
 	Created_at TIMESTAMP DEFAULT NOW()
+	mode TEXT
+	note TEXT
 );
+
+THE EXHCNAGE statusIS THE COMPLETED OR CANCCLED FOR NOW IT INPOGRESS DEFAULT
 
 
 CREATE TABLE notifications (
