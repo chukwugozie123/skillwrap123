@@ -17,7 +17,7 @@ exports.exchange = async (req, res) => {
   try {
     const result = await db.query(
       `INSERT INTO exchange_skills (from_user_id, to_user_id, skill_offered_id, skill_requested_id, note, mode)
-       VALUES ($1, $2, $3, $4, $5)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [fromUserid, toUserId, offeredSkillId, skillRequestedId, note,'exchange']
     );

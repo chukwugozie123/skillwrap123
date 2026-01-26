@@ -4,7 +4,8 @@
 
 const db = require("../modules/db");
 const bcrypt = require("bcrypt");
-const transporter = require("../config/mailer");
+const sendEmail = require("../config/mailer"); //
+// const transporter = require("../config/mailer");
 
 
 // ================= SEND OTP =================
