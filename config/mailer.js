@@ -10,19 +10,31 @@
 
 // module.exports = transporter;
 
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.sendgrid.net",
-  port: 587,
-  auth: {
-    user: "apikey",                // literally the string "apikey"
-    pass: process.env.SENDGRID_API_KEY, // your SendGrid API key
-  },
-});
-
-module.exports = transporter;
 
 
 
+
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const sendEmail = async ({ to, subject, text, html }) => {
+  const msg = {
+    to,
+    from: process.env.SENDGRID_SENDER_EMAIL, // must be a verified sender
+    subject,
+    text,
+    html,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log("✅ Email sent to", to);
+  } catch (err) {
+    console.error("❌ Email error:", err);
+    throw err;
+  }
+};
+
+module.exports = sendEmail;
 
