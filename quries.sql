@@ -35,8 +35,6 @@ CREATE TABLE exchange_skills (
 	note TEXT
 );
 
-THE EXHCNAGE statusIS THE COMPLETED OR CANCCLED FOR NOW IT INPOGRESS DEFAULT
-
 
 CREATE TABLE notifications (
 	exchange_id INT REFERENCES exchange_skills(id)
@@ -64,6 +62,16 @@ CREATE TABLE reviews (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE exchange_messages (
+  id SERIAL PRIMARY KEY,
+  exchange_id INT REFERENCES exchange_skills(id),
+  sender VARCHAR(50),
+  message TEXT,
+  image_url TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS otp_hash TEXT,
 ADD COLUMN IF NOT EXISTS otp_expires_at BIGINT,
@@ -71,9 +79,6 @@ ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT NULL;
 
 
-ALTER TABLE exchange_skills
-ADD  COLUMN IF NOT EXISTS mode TEXT,
-ADD  COLUMN IF NOT EXISTS note TEXT,
 
 -- join table
 SELECT fullname, username, title, description, category

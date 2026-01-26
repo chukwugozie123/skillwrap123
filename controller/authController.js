@@ -174,14 +174,14 @@ exports.getProfile = async (req, res) => {
 
 exports.edit_profile = async (req, res) => {
   const userId = req.user.id
-  const {username, fullname, email} = req.body
+  const {username, fullname, email, bio} = req.body
 
 try {
   await db.query(   
      `UPDATE users
-       SET username=$1, fullname=$2, email=$3
-       WHERE id=$4`,
-       [username, fullname, email, userId]
+       SET username=$1, fullname=$2, email=$3, bio=$4
+       WHERE id=$5`,
+       [username, fullname, email, bio, userId]
       )
 
       res.json({

@@ -190,6 +190,7 @@ const notificationRoute = require("./routes/notifiacationRoute");
 const reviewRoute = require("./routes/reviewRoute");
 const profileRoute = require("./routes/profileRoute");
 const VeryemailRoute = require("./routes/verifyroutes");
+const exchangeMessageRoutes = require("./routes/chatRoute");
 
 const app = express();
 const server = http.createServer(app);
@@ -286,6 +287,7 @@ app.use("/", reviewRoute);
 app.use("/", profileRoute);
 app.use("/", notificationRoute);
 app.use("/", VeryemailRoute);
+app.use("/", exchangeMessageRoutes);
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {

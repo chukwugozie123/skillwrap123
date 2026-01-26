@@ -1,8 +1,3 @@
--- Add mode and note columns safely
-ALTER TABLE exchange_skills
-ADD COLUMN IF NOT EXISTS mode TEXT,
-ADD COLUMN IF NOT EXISTS note TEXT;
-
 -- Create exchange_messages table safely
 CREATE TABLE IF NOT EXISTS exchange_messages (
   id SERIAL PRIMARY KEY,
