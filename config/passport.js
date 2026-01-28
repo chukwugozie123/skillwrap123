@@ -187,6 +187,7 @@ passport.use(
         const fullname = profile.displayName;
         const username = fullname.replace(/\s+/g, "").toLowerCase();
         const photo = profile.photos?.[0]?.value || null;
+        console.log(photo, 'photo google')
 
         if (!email) {
           return cb(new Error("Google account has no email"), null);
@@ -202,11 +203,11 @@ passport.use(
           const insert = await db.query(
             `
             INSERT INTO users 
-            (fullname, username, email, hash_password, img_url)
-            VALUES ($1, $2, $3, $4, $5)
+            (fullname, username, email, hash_password, img_url, email_verified)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
             `,
-            [fullname, username, email, "google-oauth", photo]
+            [fullname, username, email, "google-oauth", photo, true]
           );
 
           return cb(null, insert.rows[0]);

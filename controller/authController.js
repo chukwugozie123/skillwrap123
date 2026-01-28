@@ -74,8 +74,8 @@ exports.authLogin = (req, res, next) => {
       });
     }
 
-    /* 🚫 BLOCK LOGIN IF EMAIL NOT VERIFIED */
-    // if (!user.email_verified) {
+    // /* 🚫 BLOCK LOGIN IF EMAIL NOT VERIFIED */
+    // if (user.email_verified = false) {
     //   return res.status(403).json({
     //     error: "EMAIL_NOT_VERIFIED",
     //     email: user.email,
@@ -147,7 +147,7 @@ exports.getProfile = async (req, res) => {
     }
 
     const result = await db.query(
-      "SELECT * FROM users WHERE id = $1",
+      "SELECT id, email, username, fullname, mode, img_url, email_verified, created_at FROM users WHERE id = $1",
       [req.user.id]
     );
 
