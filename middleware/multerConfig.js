@@ -1,15 +1,15 @@
-// const multer = require("multer");
+const multer = require("multer");
 
-// // ✅ Configure multer
-// const storage = multer.diskStorage({
-//   filename: (req, file, cb) => {
-//     cb(null, file.originalname);
-//   },
-// });
+// ✅ Configure multer
+const storage = multer.diskStorage({
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
 
-// const upload = multer({ storage });
+const upload = multer({ storage });
 
-// module.exports = upload
+module.exports = upload
 
 
 
@@ -95,32 +95,32 @@
 
 
 
-const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const cloudinary = require("../utils/cloudinary");
+// const multer = require("multer");
+// const { CloudinaryStorage } = require("multer-storage-cloudinary");
+// const cloudinary = require("../utils/cloudinary");
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "skillwrap/profile_pictures",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    public_id: () => `skill-${Date.now()}`,
-  },
-});
+// const storage = new CloudinaryStorage({
+//   cloudinary,
+//   params: {
+//     folder: "skillwrap/profile_pictures",
+//     allowed_formats: ["jpg", "jpeg", "png", "webp"],
+//     public_id: () => `skill-${Date.now()}`,
+//   },
+// });
 
-const fileFilter = (req, file, cb) => {
-  if (!file.mimetype.startsWith("image/")) {
-    return cb(new Error("Only image files are allowed"), false);
-  }
-  cb(null, true);
-};
+// const fileFilter = (req, file, cb) => {
+//   if (!file.mimetype.startsWith("image/")) {
+//     return cb(new Error("Only image files are allowed"), false);
+//   }
+//   cb(null, true);
+// };
 
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024,
-  },
-});
+// const upload = multer({
+//   storage,
+//   fileFilter,
+//   limits: {
+//     fileSize: 5 * 1024 * 1024,
+//   },
+// });
 
-module.exports = upload;
+// module.exports = upload;

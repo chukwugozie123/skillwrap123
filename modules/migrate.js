@@ -57,10 +57,7 @@ const runMigrations = async () => {
   /* 5️⃣ Log all columns in exchange_skills after migrations */
   try {
     const { rows: exchangeColumns } = await pool.query(`
-      SELECT column_name, data_type, is_nullable
-      FROM information_schema.columns
-      WHERE table_name = 'exchange_message'
-      ORDER BY ordinal_position;
+   
     `);
 
     console.log("📝 Columns in exchange_skills after migrations:");
@@ -73,3 +70,9 @@ const runMigrations = async () => {
 };
 
 module.exports = runMigrations;
+
+
+      // SELECT column_name, data_type, is_nullable
+      // FROM information_schema.columns
+      // WHERE table_name = 'exchange_message'
+      // ORDER BY ordinal_position;
