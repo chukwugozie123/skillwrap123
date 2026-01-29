@@ -39,10 +39,11 @@ exports.uploadProfile = async (req, res) => {
       `
       UPDATE users
       SET img_url = $1,
-      WHERE id = $3
+     WHERE id = $2
       `,
       [imageUrl, publicId, userId]
     );
+    //  img_public_id = $2
 
     /* ✅ SUCCESS */
     return res.status(200).json({

@@ -329,7 +329,7 @@ console.log("image:", req.file.public_id);
       `
       INSERT INTO skills
       (title, description, category, level, user_id, skill_img)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6)
       `,
       [
         skillname,
