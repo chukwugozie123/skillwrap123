@@ -39,7 +39,6 @@ exports.uploadProfile = async (req, res) => {
       `
       UPDATE users
       SET img_url = $1,
-          img_public_id = $2
       WHERE id = $3
       `,
       [imageUrl, publicId, userId]

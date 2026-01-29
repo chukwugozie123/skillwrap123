@@ -57,7 +57,7 @@ const runMigrations = async () => {
   /* 5️⃣ Log all columns in exchange_skills after migrations */
   try {
     const { rows: exchangeColumns } = await pool.query(`
-   
+   SELECT * FROM skills
     `);
 
     console.log("📝 Columns in exchange_skills after migrations:");
