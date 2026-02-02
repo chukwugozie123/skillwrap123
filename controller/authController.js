@@ -31,7 +31,7 @@ exports.authSignup = async (req, res) => {
     // 3️⃣ Create user as UNVERIFIED
     const result = await db.query(
       `
-      INSERT INTO users (fullname, username, email, hash_password, verified)
+      INSERT INTO users (fullname, username, email, hash_password, email_verified)
       VALUES ($1, $2, $3, $4, false)
       RETURNING id, email
       `,
@@ -147,9 +147,12 @@ exports.getProfile = async (req, res) => {
     }
 
     const result = await db.query(
-      "SELECT id, email, username, fullname, mode, img_url, email_verified, created_at FROM users WHERE id = $1",
+      "SELECT * FROM users WHERE id = $1",
       [req.user.id]
     );
+
+    // id, email, username, fullname, mode, img_url, email_verified , created_at, bio, advice 
+    console.log(result.rows)
 
     if (!result.rows.length) {
       return res.status(404).json({

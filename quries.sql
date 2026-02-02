@@ -1,4 +1,5 @@
 -- table for users
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     fullname VARCHAR(100) NOT NULL,
@@ -6,8 +7,12 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     hash_password TEXT NOT NULL,
     img_url TEXT,
+	advice TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
 
 
 -- table for users skill
@@ -18,8 +23,12 @@ CREATE TABLE skills (
 	description VARCHAR(150) not NULL,
     level VARCHAR(50) NOT NULL,
 	category VARCHAR(100) NOT NULL,
+	skill_img Text
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
+INSERT INTO skills (user_id, title, description,level, category)
+VALUES (1, 'ME', 'web development', 'pro', 'heloo')
+
 
 -- exchange_skills table
 CREATE TABLE exchange_skills (
@@ -37,7 +46,7 @@ CREATE TABLE exchange_skills (
 
 
 CREATE TABLE notifications (
-	exchange_id INT REFERENCES exchange_skills(id)
+	exchange_id INT REFERENCES exchange_skills(id),
 	id SERIAL PRIMARY KEY,
 	sender_id INT REFERENCES users(id),
 	receiver_id INT REFERENCES users(id),
@@ -46,13 +55,12 @@ CREATE TABLE notifications (
 	metadata json,
 	roomId INT,
 	Created_at TIMESTAMP DEFAULT NOW()
-)
+);
 
 
--- reviews
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
-	exchange_id INT REFERENCES exchange_skills(id)
+	exchange_id INT REFERENCES exchange_skills(id),
     from_user_id INT REFERENCES users(id),
 	to_user_id INT REFERENCES users(id),
 	skill_offered_id INT REFERENCES skills(id),
@@ -71,7 +79,6 @@ CREATE TABLE exchange_messages (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS otp_hash TEXT,
 ADD COLUMN IF NOT EXISTS otp_expires_at BIGINT,
@@ -88,3 +95,11 @@ ON users.id = user_id
 
 
 
+INSERT INTO users (fullname, username, email, hash_password, img_url)
+VALUES (
+    'Felix Umeche',                        -- full name
+    'felixumeche',                          -- username (must be unique)
+    'felixumeche@example.com',              -- email (must be unique)
+    '$2b$12$e0MYzXyjpJS7Pd0RVvHwHeFx2T0OG2eZQnJq1g8y3EiQ6mK9d9o2', -- hashed password
+    'https://randomuser.me/api/portraits/men/75.jpg'  -- image URL
+);

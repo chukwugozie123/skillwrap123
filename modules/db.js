@@ -1,19 +1,19 @@
 // const { Pool } = require('pg');
-// require('dotenv').config(); // Load .env variables
+// require('dotenv').config();
 
-// // Configure the pool using the environment variable
-// const pool = new Pool({
-//   connectionString: 'postgresql:skillwrap_db_user:O3D526EAYy9bnOiaQ8RzlxnUWSpx1B0P@dpg-d59utb4hg0os73cjqhi0-a.oregon-postgres.render.com/skillwrap_db',
-//   // process.env.DATABASE_URL,
-//   ssl: {
-//     rejectUnauthorized: false // Needed for Render.com hosted Postgres
-//   }
-// });
 
-  
-// console.log('Successfully connected to DB');
+// const db = new Pool({
+// user: process.env.PG_USER,
+//   host: process.env.PG_HOST,
+//   database: process.env.PG_DATABASE,
+//   password: process.env.PG_PASSWORD,
+//   port: process.env.PG_PORT,
+// })
+// console.log("sucessfull conntect to db");
 
-// // Export the pool to use in other files
+// module.exports = db;
+
+
 
 
 require('dotenv').config();

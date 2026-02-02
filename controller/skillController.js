@@ -112,7 +112,6 @@ exports.oneskill = async (req, res) => {
 // };
 
 
-
 exports.getSkills = async (req, res) => {
   try {
     const result = await db.query(`
@@ -122,6 +121,7 @@ exports.getSkills = async (req, res) => {
         skills.category,
         skills.description,
         skills.level,
+        skills.skill_img,
         skills.created_at,
         skills.user_id AS owner_id,
         users.username
@@ -136,6 +136,7 @@ exports.getSkills = async (req, res) => {
       category: skill.category,
       description: skill.description,
       level: skill.level,
+      skillImg: skill.skill_img,   // ✅ added
       createdAt: skill.created_at,
       ownerId: skill.owner_id,
       username: skill.username || "Unknown",
@@ -155,6 +156,13 @@ exports.getSkills = async (req, res) => {
 };
 
 
+
+// continue
+// 6. spurious
+// 7.Antedieuvian
+// 8. renuniciation
+// 9. tenable
+// 10. catalogue
 
 
 
