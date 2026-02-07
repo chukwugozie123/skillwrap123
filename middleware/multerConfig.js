@@ -1,15 +1,32 @@
-const multer = require("multer");
+// const multer = require("multer");
 
-// ✅ Configure multer
-const storage = multer.diskStorage({
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
+// // ✅ Configure multer
+// const storage = multer.diskStorage({
+//   filename: (req, file, cb) => {
+//     cb(null, file.originalname);
+//   },
+// });
+
+// const upload = multer({ storage });
+
+// module.exports = upload
+
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../utils/cloudinary");
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "skills",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
   },
 });
 
 const upload = multer({ storage });
 
-module.exports = upload
+module.exports = upload;
+
 
 
 
