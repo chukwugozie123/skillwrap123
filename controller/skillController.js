@@ -19,13 +19,11 @@ exports.home = async (req, res) => {
 
 };
 
-
-//one skill
 exports.oneskill = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ GUARD
+    // ✅ Validate ID
     if (!id || isNaN(Number(id))) {
       return res.status(400).json({
         success: false,
@@ -33,15 +31,19 @@ exports.oneskill = async (req, res) => {
       });
     }
 
+    // Fetch skill with user info
     const query = `
       SELECT 
-        s.id,
+        s.id AS skill_id,
         s.title,
         s.description,
         s.category,
         s.level,
         s.skill_img,
-        s.created_at,
+        s.youtubelink,
+        s.learningpoint,
+        s.portfolio_link,
+        s.created_at, 
         u.id AS user_id,
         u.username,
         u.fullname
@@ -49,8 +51,6 @@ exports.oneskill = async (req, res) => {
       JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
     `;
-
-    console.log("PARAM ID:", req.params.id);
 
     const result = await db.query(query, [Number(id)]);
 
@@ -61,9 +61,37 @@ exports.oneskill = async (req, res) => {
       });
     }
 
+    const skill = result.rows[0];
+
+    // Parse learning points JSON string to array
+    let learningPoints = [];
+    if (skill.learningpoint) {
+      try {
+        learningPoints = JSON.parse(skill.learningpoint);
+      } catch (e) {
+        learningPoints = [skill.learningpoint]; // fallback if not JSON
+      }
+    }
+
     res.status(200).json({
       success: true,
-      skill: result.rows[0],
+      skill: {
+        id: skill.skill_id,
+        title: skill.title,
+        description: skill.description,
+        category: skill.category,
+        level: skill.level,
+        skill_img: skill.skill_img,
+        youtube_link: skill.youtubelink || null,
+        learningPoints,
+        portfolio_link: skill.portfolio_link || null, // ✅ move portfolio_link from skills table
+        created_at: skill.created_at,
+        user: {
+          id: skill.user_id,
+          username: skill.username,
+          fullname: skill.fullname,
+        },
+      },
     });
   } catch (err) {
     console.error("❌ Error fetching skill:", err);
@@ -73,7 +101,6 @@ exports.oneskill = async (req, res) => {
     });
   }
 };
-
 
 
 
@@ -294,20 +321,102 @@ exports.delete_skill = async (req, res) => {
   }
 };
 
+// exports.createSkill = async (req, res) => {
+//   try {
+//     if (!req.user || !req.user.id) {
+//       return res.status(401).json({ error: "Unauthorized" });
+//     }
+
+//     if (!req.file) {
+//       return res.status(400).json({ error: "Skill image is required" });
+//     }
+
+//     const { skillname, skilldesc, category, skilllevel, youtube_link, learningPoints } = req.body;
+//     const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
+
+//     // Validation
+//     if (!skillname || skillname.length < 2 || skillname.length > 50) {
+//       return res.status(400).json({ error: "Invalid skill name" });
+//     }
+//     if (!skilldesc || skilldesc.length < 10 || skilldesc.length > 500) {
+//       return res.status(400).json({ error: "Invalid description" });
+//     }
+//     if (!category || category.length < 2 || category.length > 30) {
+//       return res.status(400).json({ error: "Invalid category" });
+//     }
+
+//     if (
+//       !validChars.test(skillname) ||
+//       !validChars.test(skilldesc) ||
+//       !validChars.test(category) 
+//     ) {
+//       return res.status(400).json({ error: "Invalid characters detected" });
+//     }
+
+//     const imageUrl = req.file.path;       // ✅ Cloudinary secure URL
+//     const publicId = req.file.public_id;  // ✅ Correct field
+
+//     await db.query(
+//       `
+//       INSERT INTO skills
+//       (title, description, category, level, user_id, skill_img, skill_img_public_id, youtubelink, learningpoint)
+//       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+//       `,
+//       [
+//         skillname,
+//         skilldesc,
+//         category,
+//         skilllevel,
+//         req.user.id,
+//         imageUrl,
+//         publicId,
+//         youtube_link,
+//         learningPoints
+//       ]
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Skill created successfully",
+//       imageUrl,
+//     });
+//   } catch (error) {
+//     console.error("Error creating skill:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Server error",
+//     });
+//   }
+// };
+
+
 exports.createSkill = async (req, res) => {
   try {
+    // ✅ Check user auth
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    // ✅ Check image
     if (!req.file) {
       return res.status(400).json({ error: "Skill image is required" });
     }
 
-    const { skillname, skilldesc, category, skilllevel } = req.body;
+    // ✅ Destructure form fields
+    let { skillname, skilldesc, category, skilllevel, youtube_link, learningPoints, portfolio } = req.body;
+
+    // If learningPoints comes as string (from FormData), try to parse JSON array
+    if (typeof learningPoints === "string") {
+      try {
+        learningPoints = JSON.parse(learningPoints);
+      } catch (e) {
+        learningPoints = [learningPoints]; // fallback as single string
+      }
+    }
+
+    // Validation rules
     const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
 
-    // Validation
     if (!skillname || skillname.length < 2 || skillname.length > 50) {
       return res.status(400).json({ error: "Invalid skill name" });
     }
@@ -317,27 +426,32 @@ exports.createSkill = async (req, res) => {
     if (!category || category.length < 2 || category.length > 30) {
       return res.status(400).json({ error: "Invalid category" });
     }
-
-    if (
-      !validChars.test(skillname) ||
-      !validChars.test(skilldesc) ||
-      !validChars.test(category)
-    ) {
+    if (skilllevel && !["Beginner", "Intermediate", "Professional"].includes(skilllevel)) {
+      return res.status(400).json({ error: "Invalid skill level" });
+    }
+    if (!validChars.test(skillname) || !validChars.test(skilldesc) || !validChars.test(category)) {
       return res.status(400).json({ error: "Invalid characters detected" });
     }
 
-    const imageUrl = req.file.path;       // ✅ Cloudinary secure URL
-    const publicId = req.file.public_id;  // ✅ Correct field
+    // Optional: validate YouTube link format
+    if (youtube_link && !/^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/.test(youtube_link)) {
+      return res.status(400).json({ error: "Invalid YouTube link" });
+    }
 
-console.log("FILE:", req.file.path);
-console.log("image:", req.file.public_id);
+    // Optional: validate learningPoints array
+    if (!Array.isArray(learningPoints)) learningPoints = [];
+    learningPoints = learningPoints.map((point) => point.trim()).filter((point) => point.length > 0);
 
+    // ✅ Image URLs
+    const imageUrl = req.file.path;       // Cloudinary secure URL
+    const publicId = req.file.public_id;  // Cloudinary public ID
 
+    // ✅ Insert into DB
     await db.query(
       `
       INSERT INTO skills
-      (title, description, category, level, user_id, skill_img, skill_img_public_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      (title, description, category, level, user_id, skill_img, skill_img_public_id, youtubelink, learningpoint, portfolio_link)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `,
       [
         skillname,
@@ -347,17 +461,22 @@ console.log("image:", req.file.public_id);
         req.user.id,
         imageUrl,
         publicId,
+        youtube_link || null,
+        JSON.stringify(learningPoints), // save array as JSON string
+        portfolio
       ]
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Skill created successfully",
       imageUrl,
+      youtube_link: youtube_link || null,
+      learningPoints,
     });
   } catch (error) {
     console.error("Error creating skill:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Server error",
     });

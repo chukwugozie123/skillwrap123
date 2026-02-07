@@ -8,12 +8,15 @@ CREATE TABLE users (
     hash_password TEXT NOT NULL,
     img_url TEXT,
 	advice TEXT,
+	bio TEXT,
+	mode TEXT DEFAULT NULL,
+	email_verified BOOLEAN DEFAULT false,
+	otp_hash TEXT,
+	otp_expires_at BIGINT,
+	 advice TEXT DEFAULT NULL;
+	 img_public_id TEXT
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-
-
-
 
 -- table for users skill
 CREATE TABLE skills (
@@ -24,11 +27,11 @@ CREATE TABLE skills (
     level VARCHAR(50) NOT NULL,
 	category VARCHAR(100) NOT NULL,
 	skill_img Text
+	skill_img_public_id TEXT,
+	youtubelink TEXT,
+	learningpoint TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
-INSERT INTO skills (user_id, title, description,level, category)
-VALUES (1, 'ME', 'web development', 'pro', 'heloo')
-
 
 -- exchange_skills table
 CREATE TABLE exchange_skills (

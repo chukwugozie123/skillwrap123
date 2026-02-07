@@ -189,9 +189,6 @@ console.log("req.body:", req.body);
       [imageUrl, publicId, userId]
     );
 
-    console.log("req.file:", req.file);
-console.log("req.body:", req.body);
-
     /* ✅ SUCCESS RESPONSE */
     return res.status(200).json({
       success: true,
