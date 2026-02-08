@@ -42,7 +42,7 @@ exports.getUserProfile = async (req, res) => {
       [user.id]
     );
 
-/* 4️⃣ Skills with ratings */
+/* 4️⃣ Skills with ratings + user info */
 const skillsResult = await db.query(
   `
   SELECT
@@ -52,23 +52,35 @@ const skillsResult = await db.query(
     s.description,
     s.level,
     s.category,
-    s.skill_img,       -- added this line
+    s.skill_img,
     s.created_at,
+
+    -- ratings
     COALESCE(ROUND(AVG(r.rating)::numeric, 1), 0) AS avg_rating,
-    COUNT(r.id)::int AS review_count
+    COUNT(r.id)::int AS review_count,
+
+    -- user info (NEW)
+    u.username,
+    u.fullname,
+    u.mode AS user_mode,
+    u.bio AS user_bio
+
   FROM skills s
+  JOIN users u ON u.id = s.user_id
   LEFT JOIN reviews r
     ON (
       r.skill_offered_id = s.id
       OR r.skill_requested_id = s.id
     )
     AND r.from_user_id <> s.user_id
+
   WHERE s.user_id = $1
-  GROUP BY s.id
+  GROUP BY s.id, u.id
   ORDER BY s.created_at DESC
   `,
   [user.id]
 );
+
 
     /* 5️⃣ Reviews per skill */
     const skillsWithReviews = await Promise.all(
