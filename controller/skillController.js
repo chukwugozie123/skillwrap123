@@ -237,14 +237,14 @@ exports.viewSkill = async (req, res) => {
 // edit_skill 
 exports.edit_skill = async (req, res) => {
   const { skillId } =  req.params
-  const {title, description, level, category } = req.body
-  console.log(skillId, title, description, level, category)
+  const {title, description, level, category, youtubeLink, portfolioLink, learningpoint } = req.body
+  console.log(skillId, title, description, level, category, youtubeLink, portfolioLink, learningpoint)
   try {
       await db.query(   
      `UPDATE skills
-       SET title=$1, description=$2, level=$3, category=$4
-       WHERE id=$5`,
-       [title, description, level, category, skillId]
+       SET title=$1, description=$2, level=$3, category=$4, youtubelink=$5, portfolio_link=$6, learningpoint=$7
+       WHERE id=$8`,
+       [title, description, level, category, youtubeLink, portfolioLink, learningpoint, skillId]
       )
 
       res.json({
@@ -354,7 +354,80 @@ exports.delete_skill = async (req, res) => {
 //   }
 // };
 
+// const cloudinary = require("../utils/cloudinary");
+// exports.uploadSkillImg = async (req, res) => {
+//   try {
+//     /* 🔐 AUTH GUARD */
+//     if (!req.user || !req.user.id) {
+//       return res.status(401).json({
+//         success: false,
+//         code: "UNAUTHORIZED",
+//         message: "You must be logged in to upload a profile picture",
+//       });
+//     }
+
+//     /* 🖼️ FILE GUARD */
+//     if (!req.file) {
+//       return res.status(400).json({
+//         success: false,
+//         code: "NO_FILE",
+//         message: "No image file was uploaded",
+//       });
+//     }
+
+//     const userId = req.user.id;
+
+//     console.log("req.file:", req.file);
+// console.log("req.body:", req.body);
+
+
+//     /* ☁️ UPLOAD TO CLOUDINARY */
+//     const result = await cloudinary.uploader.upload(req.file.path, {
+//       folder: "skillwrapp/profile",
+//     });
+
+//     if (!result.secure_url || !result.public_id) {
+//       return res.status(500).json({
+//         success: false,
+//         code: "UPLOAD_FAILED",
+//         message: "Image upload failed. Please try again.",
+//       });
+//     }
+
+//     const imageUrl = result.secure_url;
+//     const publicId = result.public_id;
+
+//     /* 💾 UPDATE DATABASE */
+//     await db.query(
+//       `
+//       UPDATE skills
+//       SET skill_img = $1,
+//       WHERE user_id = $2
+//       `,
+//       [imageUrl, userId]
+//     );
+
+//     /* ✅ SUCCESS RESPONSE */
+//     return res.status(200).json({
+//       success: true,
+//       message: "Profile picture updated successfully",
+//       imageUrl,
+//     });
+
+    
+//   } catch (error) {
+//     console.error("❌ Upload profile error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       code: "SERVER_ERROR",
+//       message: "Something went wrong while uploading your profile picture",
+//     });
+//   }
+// }
+
 const cloudinary = require("../utils/cloudinary");
+
 exports.uploadSkillImg = async (req, res) => {
   try {
     /* 🔐 AUTH GUARD */
@@ -362,7 +435,7 @@ exports.uploadSkillImg = async (req, res) => {
       return res.status(401).json({
         success: false,
         code: "UNAUTHORIZED",
-        message: "You must be logged in to upload a profile picture",
+        message: "You must be logged in",
       });
     }
 
@@ -371,60 +444,85 @@ exports.uploadSkillImg = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: "NO_FILE",
-        message: "No image file was uploaded",
+        message: "No image file uploaded",
       });
     }
 
     const userId = req.user.id;
+    const { skillId } = req.body;
 
-    console.log("req.file:", req.file);
-console.log("req.body:", req.body);
+    /* 🧠 SKILL ID GUARD */
+    if (!skillId || isNaN(Number(skillId))) {
+      return res.status(400).json({
+        success: false,
+        code: "INVALID_SKILL",
+        message: "Invalid skill ID",
+      });
+    }
 
+    console.log("Uploading skill image:", {
+      userId,
+      skillId,
+      file: req.file.originalname,
+    });
 
     /* ☁️ UPLOAD TO CLOUDINARY */
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "skillwrapp/profile",
+      folder: "skillwrap/skills",
+      transformation: [
+        { width: 800, height: 450, crop: "fill" },
+        { quality: "auto" },
+        { fetch_format: "auto" },
+      ],
     });
 
-    if (!result.secure_url || !result.public_id) {
+    if (!result.secure_url) {
       return res.status(500).json({
         success: false,
         code: "UPLOAD_FAILED",
-        message: "Image upload failed. Please try again.",
+        message: "Image upload failed",
       });
     }
 
     const imageUrl = result.secure_url;
-    const publicId = result.public_id;
 
-    /* 💾 UPDATE DATABASE */
-    await db.query(
+    /* 🔐 OWNERSHIP CHECK + UPDATE */
+    const updateResult = await db.query(
       `
       UPDATE skills
-      SET skill_img = $1,
-      WHERE user_id = $2
+      SET skill_img = $1
+      WHERE id = $2 AND user_id = $3
+      RETURNING id, skill_img
       `,
-      [imageUrl, userId]
+      [imageUrl, Number(skillId), userId]
     );
 
-    /* ✅ SUCCESS RESPONSE */
+    if (!updateResult.rowCount) {
+      return res.status(403).json({
+        success: false,
+        code: "NOT_ALLOWED",
+        message: "You are not allowed to update this skill",
+      });
+    }
+
+    /* ✅ SUCCESS */
     return res.status(200).json({
       success: true,
-      message: "Profile picture updated successfully",
-      imageUrl,
+      message: "Skill image updated successfully",
+      img_url: imageUrl,
     });
 
-    
   } catch (error) {
-    console.error("❌ Upload profile error:", error);
+    console.error("❌ Upload skill image error:", error);
 
     return res.status(500).json({
       success: false,
       code: "SERVER_ERROR",
-      message: "Something went wrong while uploading your profile picture",
+      message: "Something went wrong while uploading the skill image",
     });
   }
-}
+};
+
 
 exports.createSkill = async (req, res) => {
   try {

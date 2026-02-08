@@ -19,7 +19,7 @@ router.post(
 router.get("/skills/:id", skillController.oneskill)
 router.get("/skills", skillController.getSkills);
 router.get("/view-skill", skillController.viewSkill)
-router.post("/upload/skill/img", skillController.uploadSkillImg)
+router.post("/upload/skill/img", upload.single("image"), skillController.uploadSkillImg)
 router.patch("/skill/:skillId/edit-skill", skillController.edit_skill);
 router.delete("/skill/:skillId", skillController.delete_skill)
 
