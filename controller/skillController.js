@@ -104,41 +104,6 @@ exports.oneskill = async (req, res) => {
 
 
 
-// exports.getSkills = async (req, res) => {
-//   try {
-//     const result = await db.query(`
-//       SELECT
-//         skills.id,
-//         skills.title,
-//         skills.category,
-//         skills.description,
-//         skills.level,
-//         skills.created_at,
-//         users.username
-//       FROM skills
-//       LEFT JOIN users ON skills.user_id = users.id
-//       ORDER BY skills.created_at DESC
-//     `);
-
-//     const skills = result.rows.map(skill => ({
-//       ...skill,
-//       username: skill.username || "Unknown",
-//     }));
-
-//     res.status(200).json({
-//       success: true,
-//       skills,
-//     });
-//   } catch (error) {
-//     console.error("GET /skills error:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Failed to fetch skills",
-//     });
-//   }
-// };
-
-
 exports.getSkills = async (req, res) => {
   try {
     const result = await db.query(`
@@ -389,6 +354,77 @@ exports.delete_skill = async (req, res) => {
 //   }
 // };
 
+const cloudinary = require("../utils/cloudinary");
+exports.uploadSkillImg = async (req, res) => {
+  try {
+    /* 🔐 AUTH GUARD */
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        code: "UNAUTHORIZED",
+        message: "You must be logged in to upload a profile picture",
+      });
+    }
+
+    /* 🖼️ FILE GUARD */
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        code: "NO_FILE",
+        message: "No image file was uploaded",
+      });
+    }
+
+    const userId = req.user.id;
+
+    console.log("req.file:", req.file);
+console.log("req.body:", req.body);
+
+
+    /* ☁️ UPLOAD TO CLOUDINARY */
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "skillwrapp/profile",
+    });
+
+    if (!result.secure_url || !result.public_id) {
+      return res.status(500).json({
+        success: false,
+        code: "UPLOAD_FAILED",
+        message: "Image upload failed. Please try again.",
+      });
+    }
+
+    const imageUrl = result.secure_url;
+    const publicId = result.public_id;
+
+    /* 💾 UPDATE DATABASE */
+    await db.query(
+      `
+      UPDATE skills
+      SET skill_img = $1,
+      WHERE user_id = $2
+      `,
+      [imageUrl, userId]
+    );
+
+    /* ✅ SUCCESS RESPONSE */
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully",
+      imageUrl,
+    });
+
+    
+  } catch (error) {
+    console.error("❌ Upload profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      code: "SERVER_ERROR",
+      message: "Something went wrong while uploading your profile picture",
+    });
+  }
+}
 
 exports.createSkill = async (req, res) => {
   try {
