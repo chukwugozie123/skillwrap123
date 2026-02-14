@@ -46,7 +46,8 @@ exports.oneskill = async (req, res) => {
         s.created_at, 
         u.id AS user_id,
         u.username,
-        u.fullname
+        u.fullname,
+        u.mode
       FROM skills s
       JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
@@ -90,9 +91,12 @@ exports.oneskill = async (req, res) => {
           id: skill.user_id,
           username: skill.username,
           fullname: skill.fullname,
+          mode: skill.mode,
         },
       },
     });
+
+    console.log(skill)
   } catch (err) {
     console.error("❌ Error fetching skill:", err);
     res.status(500).json({
@@ -116,7 +120,8 @@ exports.getSkills = async (req, res) => {
         skills.skill_img,
         skills.created_at,
         skills.user_id AS owner_id,
-        users.username
+        users.username,
+        users.mode
       FROM skills
       LEFT JOIN users ON skills.user_id = users.id
       ORDER BY skills.created_at DESC
@@ -132,8 +137,10 @@ exports.getSkills = async (req, res) => {
       createdAt: skill.created_at,
       ownerId: skill.owner_id,
       username: skill.username || "Unknown",
+      mode: skill.mode,
     }));
 
+    console.log(skills)
     res.status(200).json({
       success: true,
       skills,
