@@ -520,7 +520,7 @@ const uploadRoute = require("./routes/uploadRoutes");
 const notificationRoute = require("./routes/notifiacationRoute");
 const reviewRoute = require("./routes/reviewRoute");
 const profileRoute = require("./routes/profileRoute");
-const verifyEmailRoute = require("./routes/verifyRoutes");
+const verifyEmailRoute = require("./routes/verifyroutes");
 const exchangeMessageRoutes = require("./routes/chatRoute");
 const AiSkillMatch = require("./routes/AiMatchRoutes");
 
