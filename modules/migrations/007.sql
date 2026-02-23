@@ -1,0 +1,2 @@
+ALTER TABLE rooms 
+ADD COLUMN exchange_id INTEGER REFERENCES exchanges(id) ON DELETE CASCADE,

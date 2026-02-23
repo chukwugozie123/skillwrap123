@@ -180,28 +180,143 @@ exports.getStats = async (req, res) => {
     }
   }
 
-
 exports.updateStatus = async (req, res) => {
   try {
+    console.log("===== UPDATE STATUS CALLED =====");
 
-    // const exchange_id = req.user?.id
+    const userId = req.user?.id;
     const { status, exchange_id } = req.body;
 
+    console.log("User:", userId);
+    console.log("Exchange ID:", exchange_id);
+    console.log("New Status:", status);
+
     if (!exchange_id || !status) {
-      return res.json({ success: false, error: "Missing fields" });
+      console.log("❌ Missing fields");
+      return res.status(400).json({ success: false, error: "Missing fields" });
     }
+
+    // 1️⃣ Verify exchange exists
+    const exchange = await db.query(
+      `SELECT * FROM exchange_skills 
+       WHERE id = $1 
+       AND (from_user_id = $2 OR to_user_id = $2)`,
+      [exchange_id, userId]
+    );
+
+    console.log("Exchange Query Result:", exchange.rows);
+
+    if (!exchange.rows.length) {
+      console.log("❌ Unauthorized attempt");
+      return res.status(403).json({ success: false, error: "Unauthorized" });
+    }
+
+    const exchangeData = exchange.rows[0];
+
+    // 2️⃣ If accepting → create room FIRST
+    if (status === "accepted") {
+      console.log("Status is ACCEPTED. Checking room...");
+
+      const existingRoom = await db.query(
+        `SELECT * FROM rooms WHERE exchange_id = $1`,
+        [exchange_id]
+      );
+
+      console.log("Existing room check:", existingRoom.rows);
+
+      let roomId;
+
+      if (!existingRoom.rows.length) {
+        console.log("No room found. Creating new room...");
+
+        const newRoom = await db.query(
+          `INSERT INTO rooms (exchange_id, name, user_id)
+           VALUES ($1, $2, $3)
+           RETURNING *`,
+          [exchange_id, `exchange-${exchange_id}`, userId]
+        );
+
+        console.log("Room created:", newRoom.rows);
+
+        roomId = newRoom.rows[0].id;
+
+        console.log("New Room ID:", roomId);
+
+        // Insert both users into room_members
+        // await db.query(
+        //   `INSERT INTO room_members (room_id, user_id)
+        //    VALUES ($1, $2), ($1, $3)
+        //    ON CONFLICT DO NOTHING`,
+        //   [
+        //     roomId,
+        //     exchangeData.from_user_id,
+        //     exchangeData.to_user_id,
+        //   ]
+        // );
+
+        console.log("Room members inserted");
+      } else {
+        console.log("Room already exists. Skipping creation.");
+      }
+    }
+
+    // 3️⃣ FINALLY update exchange status LAST
+    console.log("Updating exchange status now...");
 
     await db.query(
       `UPDATE exchange_skills SET status = $1 WHERE id = $2`,
       [status, exchange_id]
     );
 
+    console.log("Exchange status updated successfully");
+
     res.json({ success: true });
+
   } catch (err) {
-    console.error(err);
+    console.error("🔥 SERVER ERROR:", err);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
+
+
+
+// exports.updateStatus = async (req, res) => {
+//   try {
+
+//     // const exchange_id = req.user?.id
+//     const userId = req.user?.id
+//     const { status, exchange_id } = req.body;
+
+//     console.log(userId)
+
+//     if (!exchange_id || !status) {
+//       return res.json({ success: false, error: "Missing fields" });
+//     }
+
+//     if (status === "accepted") {
+//       await db.query(
+//       `UPDATE exchange_skills SET status = $1 WHERE id = $2`,
+//       [status, exchange_id]
+//     );    
+    
+//       await db.query(
+//         `INSERT INTO rooms (exchange_id, name, user_id) VALUES ($1, $2, $3)`,
+//         [exchange_id, userId]
+//       )
+//     } else {
+//       await db.query(
+//       `UPDATE exchange_skills SET status = $1 WHERE id = $2`,
+//       [status, exchange_id]
+//     );
+//     }
+
+//     res.json({ success: true });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ success: false, error: "Server error" });
+//   }
+// };
 
 
 exports.updateExchangeStatus = async (req, res) => {
@@ -305,6 +420,26 @@ exports.DeleteExhanage = async (req, res) => {
   } catch (error) {
     console.error("delete-exchange error:", error);
     res.status(500).json({ success: false, error: "Failed to delete exhchange." });
+  }
+}
+
+
+exports.GetMyRoom = async (req, res) => {
+  const userId = req.user?.id
+
+  try {
+    const result =  await db.query("SELECT * FROM rooms WHERE user_id = $1", [userId])
+
+    res.json({
+      succes: true,
+      room: result.rows,
+      message: "succesfully fecthed room"
+    })
+  } catch (error) {
+    res.json({
+      succes: false,
+      message: "failed to fecth room"
+    })
   }
 }
 

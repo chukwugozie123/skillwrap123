@@ -1,0 +1,2 @@
+ALTER TABLE messages ADD COLUMN  type VARCHAR(20) DEFAULT 'text',
+ ALTER TABLE messages ADD COLUMN  file_url TEXT,

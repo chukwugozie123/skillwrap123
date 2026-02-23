@@ -1,6 +1,8 @@
 CREATE TABLE rooms (
     id SERIAL PRIMARY KEY,
+    exchange_id INTEGER REFERENCES exchanges(id) ON DELETE CASCADE,
     name VARCHAR(255) UNIQUE NOT NULL,
+    user_id INT REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -16,6 +18,8 @@ CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
     sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(20) DEFAULT 'text',
+    file_url TEXT,
     text TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
