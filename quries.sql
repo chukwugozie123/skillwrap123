@@ -30,6 +30,7 @@ CREATE TABLE skills (
 	skill_img_public_id TEXT,
 	youtubelink TEXT,
 	learningpoint TEXT,
+	portfolio_link TEXT
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
@@ -73,13 +74,40 @@ CREATE TABLE reviews (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE exchange_messages (
-  id SERIAL PRIMARY KEY,
-  exchange_id INT REFERENCES exchange_skills(id),
-  sender VARCHAR(50),
-  message TEXT,
-  image_url TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
+-- CREATE TABLE exchange_messages (
+--   id SERIAL PRIMARY KEY,
+--   exchange_id INT REFERENCES exchange_skills(id),
+--   sender VARCHAR(50),
+--   message TEXT,
+--   image_url TEXT,
+--   created_at TIMESTAMP DEFAULT NOW()
+-- );
+
+
+CREATE TABLE rooms (
+    id SERIAL PRIMARY KEY,
+    exchange_id INTEGER REFERENCES exchanges(id) ON DELETE CASCADE,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    user_id INT REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE room_members (
+    id SERIAL PRIMARY KEY,
+    room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(room_id, user_id)
+);
+
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+    sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(20) DEFAULT 'text',
+    file_url TEXT,
+    text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE users

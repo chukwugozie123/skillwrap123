@@ -3,22 +3,10 @@ const router = express.Router();
 const chatController = require("../controller/chatController");
 const { ensureAuth } = require("../middleware/auth");
 
-/**
- * Get chat history
- */
-router.get(
-  "/exchange/:exchange_id/messages",
-  ensureAuth,
-  chatController.getMessages
-);
 
-/**
- * Save new message
- */
-router.post(
-  "/exchange/:exchange_id/messages",
-  ensureAuth,
-  chatController.createMessage
-);
+router.get("/user/my-room", ensureAuth, chatController.GetMyRoom);
+router.post("/user/set/attachment", ensureAuth, chatController.userSetAttachment);
+router.get("/user/attachment", ensureAuth, chatController.GetAttachment);
+
 
 module.exports = router;

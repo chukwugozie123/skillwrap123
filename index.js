@@ -254,6 +254,7 @@ const profileRoute = require("./routes/profileRoute");
 const verifyEmailRoute = require("./routes/verifyroutes");
 const exchangeMessageRoutes = require("./routes/chatRoute");
 const AiSkillMatch = require("./routes/AiMatchRoutes");
+const chatRoute = require("./routes/chatRoute")
 
 require("./config/passport"); // Passport config
 
@@ -316,6 +317,7 @@ app.use("/", notificationRoute);
 app.use("/", verifyEmailRoute);
 app.use("/", exchangeMessageRoutes);
 app.use("/", AiSkillMatch);
+app.use("/", chatRoute);
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
@@ -355,6 +357,8 @@ io.on("connection", (socket) => {
     try {
 
       console.log(roomId, userId, 'checking something')
+
+
       if (!roomId || !userId) return;
 
       /* 1️⃣ Check if room exists */
@@ -537,19 +541,19 @@ io.on("connection", (socket) => {
 
 });
 
+app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+// /* ================= START SERVER ================= */
+// const startServer = async () => {
+//   try {
+//     await runMigrations(); // ensure tables exist
+//     server.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+//   } catch (err) {
+//     console.error("❌ Server failed to start:", err);
+//     process.exit(1);
+//   }
+// };
 
-/* ================= START SERVER ================= */
-const startServer = async () => {
-  try {
-    await runMigrations(); // ensure tables exist
-    server.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
-  } catch (err) {
-    console.error("❌ Server failed to start:", err);
-    process.exit(1);
-  }
-};
-
-startServer();
+// startServer();
 
 
 

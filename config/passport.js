@@ -249,7 +249,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    console.log("🔓 Deserializing user id:", id);
+    // console.log("🔓 Deserializing user id:", id);
 
     const result = await db.query(
       `

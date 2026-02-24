@@ -424,33 +424,33 @@ exports.DeleteExhanage = async (req, res) => {
 }
 
 
-exports.GetMyRoom = async (req, res) => {
-  const userId = req.user?.id
+// exports.GetMyRoom = async (req, res) => {
+//   const userId = req.user?.id
 
-  try {
-    const result =  await db.query("SELECT * FROM rooms WHERE user_id = $1", [userId])
+//   try {
+//     const result =  await db.query("SELECT * FROM rooms WHERE user_id = $1", [userId])
 
-    res.json({
-      succes: true,
-      room: result.rows,
-      message: "succesfully fecthed room"
-    })
-  } catch (error) {
-    res.json({
-      succes: false,
-      message: "failed to fecth room"
-    })
-  }
-}
+//     res.json({
+//       succes: true,
+//       room: result.rows,
+//       message: "succesfully fecthed room"
+//     })
+//   } catch (error) {
+//     res.json({
+//       succes: false,
+//       message: "failed to fecth room"
+//     })
+//   }
+// }
 
 
-// exports.get_exchnage = async (req, res) => {
-//   const exchange_id = req.body
+// // exports.get_exchnage = async (req, res) => {
+// //   const exchange_id = req.body
 
-//   const result = await db.query("SELECT * FROM exchnage_skill WHERE exchnage_id = $1", [exchange_id])
+// //   const result = await db.query("SELECT * FROM exchnage_skill WHERE exchnage_id = $1", [exchange_id])
 
-//   res.json({
-//     success: true,
-//     request: result.rows
-//   })
-// };
+// //   res.json({
+// //     success: true,
+// //     request: result.rows
+// //   })
+// // };

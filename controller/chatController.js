@@ -1,71 +1,58 @@
 const db = require("../modules/db");
 
-/**
- * GET messages for an exchange
- * GET /exchange/:exchange_id/messages
- */
-exports.getMessages = async (req, res) => {
-  const { exchange_id } = req.params;
+exports.GetMyRoom = async (req, res) => {
+  const userId = req.user?.id
 
   try {
-    const { rows } = await db.query(
-      `
-      SELECT id, sender, message, image_url, created_at
-      FROM exchange_messages
-      WHERE exchange_id = $1
-      ORDER BY created_at ASC
-      `,
-      [exchange_id]
-    );
+    const result =  await db.query("SELECT * FROM rooms WHERE user_id = $1", [userId])
 
     res.json({
-      success: true,
-      messages: rows,
-    });
+      succes: true,
+      room: result.rows,
+      message: "succesfully fecthed room"
+    })
   } catch (error) {
-    console.error("getMessages error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch messages",
-    });
+    res.json({
+      succes: false,
+      message: "failed to fecth room"
+    })
   }
-};
+}
 
-/**
- * SAVE a message
- * POST /exchange/:exchange_id/messages
- */
-exports.createMessage = async (req, res) => {
-  const { exchange_id } = req.params;
-  const { sender, message, image_url } = req.body;
 
-  if (!sender || (!message && !image_url)) {
-    return res.status(400).json({
-      success: false,
-      error: "Invalid message payload",
-    });
-  }
+exports.userSetAttachment = async (req, res) => {
+  const {duration, intensity, steps, goal, rules } = req.body 
 
+  console.log(duration, intensity, steps, goal, rules, 'afd all in one place,,,,')
+try {
+ const result =  await db.query("INSERT INTO rooms (duration, intensity, steps, goal) VALUES ($1, $2, $3, $4)", 
+    [duration, intensity, steps, goal]
+  )
+  
+  res.json({
+    succes: true,
+    message: "Successfully set attachment."
+  })
+} catch (error) {
+  res.json({
+    succes: false,
+    message: "Failed to set attachment"
+  })
+}
+}
+
+exports.GetAttachment = async(req, res) => {
+  const userId = req.user?.id
+  const {roomId} = req.body
   try {
-    const { rows } = await db.query(
-      `
-      INSERT INTO exchange_messages 
-      (exchange_id, sender, message, image_url)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, sender, message, image_url, created_at
-      `,
-      [exchange_id, sender, message || null, image_url || null]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: rows[0],
-    });
+      const roomRes = await pool.query(
+        "SELECT * FROM rooms WHERE exchange_id = $1 OR user_id = $2",
+        [roomId, userId]
+      );
   } catch (error) {
-    console.error("createMessage error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to save message",
-    });
+    res.json({
+      succes: false,
+      message: 'Failed to fecth room Info/attachment'
+    })
   }
-};
+}

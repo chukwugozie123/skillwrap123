@@ -152,7 +152,6 @@ exports.getProfile = async (req, res) => {
     );
 
     // id, email, username, fullname, mode, img_url, email_verified , created_at, bio, advice 
-    console.log(result.rows)
 
     if (!result.rows.length) {
       return res.status(404).json({
