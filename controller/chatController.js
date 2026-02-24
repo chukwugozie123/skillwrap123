@@ -25,9 +25,16 @@ exports.userSetAttachment = async (req, res) => {
 
   console.log(duration, intensity, steps, goal, rules, 'afd all in one place,,,,')
 try {
- const result =  await db.query("INSERT INTO rooms (duration, intensity, steps, goal) VALUES ($1, $2, $3, $4)", 
-    [duration, intensity, steps, goal]
-  )
+await db.query(
+  `UPDATE rooms
+   SET duration = $1,
+       intensity = $2,
+       steps = $3,
+       goal = $4,
+       rules = $5
+   WHERE exchange_id = $6`,
+  [duration, intensity, steps, goal, rules, roomId]
+)
   
   res.json({
     succes: true,
@@ -40,19 +47,23 @@ try {
   })
 }
 }
+exports.GetAttachment = async (req, res) => {
+  const { roomId } = req.params
 
-exports.GetAttachment = async(req, res) => {
-  const userId = req.user?.id
-  const {roomId} = req.body
   try {
-      const roomRes = await pool.query(
-        "SELECT * FROM rooms WHERE exchange_id = $1 OR user_id = $2",
-        [roomId, userId]
-      );
+    const result = await db.query(
+      "SELECT duration, intensity, steps, goal, rules FROM rooms WHERE exchange_id = $1",
+      [roomId]
+    )
+
+    res.json({
+      success: true,
+      attachment: result.rows[0]
+    })
   } catch (error) {
     res.json({
-      succes: false,
-      message: 'Failed to fecth room Info/attachment'
+      success: false,
+      message: "Failed to fetch room info"
     })
   }
 }
