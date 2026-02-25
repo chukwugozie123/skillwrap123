@@ -6,7 +6,7 @@ const { ensureAuth } = require("../middleware/auth");
 
 router.get("/user/my-room", ensureAuth, chatController.GetMyRoom);
 router.post("/user/set/attachment", ensureAuth, chatController.userSetAttachment);
-router.get("/user/attachment", ensureAuth, chatController.GetAttachment);
+router.get("/user/attachment/:exchange_id", ensureAuth, chatController.GetAttachment);
 
 
 module.exports = router;

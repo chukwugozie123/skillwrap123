@@ -21,9 +21,9 @@ exports.GetMyRoom = async (req, res) => {
 
 
 exports.userSetAttachment = async (req, res) => {
-  const {duration, intensity, steps, goal, rules } = req.body 
+  const {duration, intensity, steps, goal, rules, exchange_id } = req.body 
 
-  console.log(duration, intensity, steps, goal, rules, 'afd all in one place,,,,')
+  console.log(duration, intensity, steps, goal, rules, exchange_id)
 try {
 await db.query(
   `UPDATE rooms
@@ -33,37 +33,53 @@ await db.query(
        goal = $4,
        rules = $5
    WHERE exchange_id = $6`,
-  [duration, intensity, steps, goal, rules, roomId]
+  [duration, intensity, steps, goal, rules, exchange_id]
 )
   
-  res.json({
-    succes: true,
-    message: "Successfully set attachment."
-  })
+res.json({
+  success: true,
+  message: "Successfully set attachment."
+})
 } catch (error) {
   res.json({
-    succes: false,
+    success: false,
     message: "Failed to set attachment"
   })
+
+  console.log(error)
 }
 }
+
+
+
 exports.GetAttachment = async (req, res) => {
-  const { roomId } = req.params
+  const { exchange_id } = req.params;
 
   try {
     const result = await db.query(
-      "SELECT duration, intensity, steps, goal, rules FROM rooms WHERE exchange_id = $1",
-      [roomId]
-    )
+      `SELECT duration, intensity, steps, goal, rules
+       FROM rooms
+       WHERE exchange_id = $1`,
+      [exchange_id]
+    );
 
-    res.json({
+    if (!result.rows.length) {
+      return res.json({
+        success: true,
+        attachment: null
+      });
+    }
+
+    return res.json({
       success: true,
       attachment: result.rows[0]
-    })
+    });
+
   } catch (error) {
-    res.json({
+    console.log(error);
+    return res.json({
       success: false,
-      message: "Failed to fetch room info"
-    })
+      message: "Failed to fetch attachment"
+    });
   }
-}
+};
