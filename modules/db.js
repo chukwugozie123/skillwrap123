@@ -14,8 +14,6 @@
 // module.exports = db;
 
 
-
-
 require('dotenv').config();
 const { Pool } = require('pg');
 

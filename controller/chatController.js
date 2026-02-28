@@ -52,6 +52,43 @@ res.json({
 
 
 
+// exports.GetAttachment = async (req, res) => {
+//   const { exchange_id } = req.params;
+
+//   try {
+//     const result = await db.query(
+//       `SELECT duration, intensity, steps, goal, rules
+//        FROM rooms
+//        WHERE exchange_id = $1`,
+//       [exchange_id]
+//     );
+
+//     if (!result.rows.length) {
+//       return res.json({
+//         success: true,
+//         attachment: null
+//       });
+//     }
+
+//     return res.json({
+//       success: true,
+//       attachment: result.rows[0]
+//     });
+
+//   } catch (error) {
+//     console.log(error);
+//     return res.json({
+//       success: false,
+//       message: "Failed to fetch attachment"
+//     });
+//   }
+// };
+
+
+
+
+
+
 exports.GetAttachment = async (req, res) => {
   const { exchange_id } = req.params;
 
@@ -70,9 +107,23 @@ exports.GetAttachment = async (req, res) => {
       });
     }
 
+    const attachment = result.rows[0];
+
+    // 🔥 NEW CHECK: if all values are null, treat as no attachment
+    const isEmpty = Object.values(attachment).every(
+      value => value === null
+    );
+
+    if (isEmpty) {
+      return res.json({
+        success: true,
+        attachment: null
+      });
+    }
+
     return res.json({
       success: true,
-      attachment: result.rows[0]
+      attachment
     });
 
   } catch (error) {

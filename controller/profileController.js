@@ -106,6 +106,8 @@ const skillsResult = await db.query(
           [skill.skill_id, user.id]
         );
 
+        // console.log(reviewsResult.rows, 'cek')
+
         return {
           ...skill,
           reviews: reviewsResult.rows,
@@ -134,7 +136,10 @@ const skillsResult = await db.query(
         overall_rating: overallRatingResult.rows[0].overall_rating,
         total_reviews: overallRatingResult.rows[0].total_reviews,
       },
-      skills: skillsWithReviews,
+      // skills: {
+      //   skillsWithReviews
+      // },
+      skillsWithReviews
     });
   } catch (err) {
     console.error("GET /profile/:username error:", err);
