@@ -6,59 +6,148 @@ const bcrypt = require("bcrypt");
 
 const saltRounds = 10;
 
-
-// post/signup
 exports.authSignup = async (req, res) => {
   const { fullname, username, email, password } = req.body;
+  const referredBy = req.query.ref || null;
 
   try {
-    // 1️⃣ Check if user already exists
+
     const existing = await db.query(
-      "SELECT id FROM users WHERE email = $1 OR username = $2",
+      "SELECT id FROM users WHERE email=$1 OR username=$2",
       [email, username]
     );
 
     if (existing.rows.length > 0) {
       return res.status(400).json({
-        success: false,
-        error: "User already exists with this email or username",
+        success:false,
+        error:"User already exists"
       });
     }
 
-    // 2️⃣ Hash password
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password,10);
 
-    // 3️⃣ Create user as UNVERIFIED
+    // generate referral code
+    const referralCode =
+      username + Math.floor(1000 + Math.random()*9000);
+
+    let referredUsername = null;
+
+    if(referredBy){
+
+      const refCheck = await db.query(
+        "SELECT username FROM users WHERE referral_code=$1",
+        [referredBy]
+      );
+
+      if(refCheck.rows.length === 0){
+        return res.status(400).json({
+          success:false,
+          error:"Invalid referral code"
+        });
+      }
+
+      referredUsername = refCheck.rows[0].username;
+
+    }
+
     const result = await db.query(
-      `
-      INSERT INTO users (fullname, username, email, hash_password, email_verified)
-      VALUES ($1, $2, $3, $4, false)
-      RETURNING id, email
-      `,
-      [fullname, username, email, hash]
+      `INSERT INTO users
+      (fullname, username, email, hash_password, email_verified, referred_by, referral_code)
+      VALUES($1,$2,$3,$4,false,$5,$6)
+      RETURNING id, email`,
+      [fullname, username, email, hash, referredUsername, referralCode]
     );
 
     const user = result.rows[0];
 
-    // 4️⃣ Send OTP email
-    // await sendOtpVerificationEmail(user.id, user.email);
+    // reward points
+    if(referredUsername){
 
-    // 5️⃣ Respond (NO SESSION)
+      await db.query(
+        "UPDATE users SET points = points + 100 WHERE username=$1",
+        [referredUsername]
+      );
+
+      await db.query(
+        "UPDATE users SET points = points + 50 WHERE id=$1",
+        [user.id]
+      );
+
+    }
+
     return res.status(201).json({
-      success: true,
-      message: "Signup successful. Please verify your email.",
-      email: user.email,
+      success:true,
+      message:"Signup successful",
+      email:user.email
     });
 
-  } catch (err) {
-    console.error("Signup error:", err);
-    return res.status(500).json({
-      success: false,
-      error: "Something went wrong",
+  } catch(err){
+    console.error(err);
+    res.status(500).json({
+      success:false,
+      error:"Server error"
     });
   }
 };
 
+
+exports.addPoints = async (req,res)=>{
+
+  const { points } = req.body;
+  const userId = req.user.id;
+
+
+  try{
+
+    await db.query(
+      "UPDATE users SET points = points + $1 WHERE id=$2",
+      [points, userId]
+    );
+
+    return res.json({
+      success:true,
+      message:`${points} points added`
+    });
+
+  }catch(err){
+
+    console.error(err);
+
+    return res.status(500).json({
+      success:false,
+      error:"Could not add points"
+    });
+
+  }
+
+};
+
+exports.GetLeaderBoard = async (req, res) =>{
+  try {
+    const result = await db.query(
+`SELECT id, username, points, created_at
+ FROM users
+ ORDER BY points DESC
+ LIMIT 20`
+);
+
+// console.log(result)
+const response = result.rows
+
+res.status(200).json({
+  success: true,
+  message: 'Fetched leaderboard sucessfully',
+  LeaderBoard: response
+})
+  } catch (error) {
+        console.error(error);
+
+    return res.status(500).json({
+      success:false,
+      error:"Could not fetch leaderboard"
+    });
+  }
+}
 
 // POST /auth/login
 exports.authLogin = (req, res, next) => {

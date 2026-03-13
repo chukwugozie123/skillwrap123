@@ -37,6 +37,8 @@ router.get("/dashboard", ensureAuth, authController.dashboard);
 router.post("/logout",ensureAuth, authController.logout)
 router.get("/profile", authController.profile);
 router.patch("/edit-profile", authController.edit_profile)
+router.post("/points/add", authController.addPoints);
+router.get("/Leaderboard", authController.GetLeaderBoard)
 // router.post("/login", bookController.AuthLogin);
 
 module.exports = router;

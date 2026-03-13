@@ -18,6 +18,11 @@ CREATE TABLE users (
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE users
+ADD COLUMN points INTEGER DEFAULT 0,
+ADD COLUMN referral_code TEXT UNIQUE,
+ADD COLUMN referred_by TEXT;
+
 -- table for users skill
 CREATE TABLE skills (
     id SERIAL PRIMARY KEY,
