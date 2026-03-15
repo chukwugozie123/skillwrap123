@@ -255,6 +255,7 @@ const verifyEmailRoute = require("./routes/verifyroutes");
 const exchangeMessageRoutes = require("./routes/chatRoute");
 const AiSkillMatch = require("./routes/AiMatchRoutes");
 const chatRoute = require("./routes/chatRoute")
+const AchivementRoute = require('./routes/AchivementRoute')
 
 require("./config/passport"); // Passport config
 
@@ -318,6 +319,8 @@ app.use("/", verifyEmailRoute);
 app.use("/", exchangeMessageRoutes);
 app.use("/", AiSkillMatch);
 app.use("/", chatRoute);
+app.use("/achievements", AchivementRoute);
+
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
