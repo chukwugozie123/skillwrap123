@@ -11,4 +11,7 @@ router.post(
   achievementController.checkAchievements
 );
 
+router.get("/achievement/user", ensureAuth, achievementController.getUserAchievements)
+router.get("/fetch/all/achivments", ensureAuth, achievementController.getAllAchievements)
+
 module.exports = router;

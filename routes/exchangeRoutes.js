@@ -12,6 +12,22 @@ router.patch("/update-exchange-status", ensureAuth, exchangeController.updateSta
 router.patch("/exchange/update-status", ensureAuth,exchangeController.updateExchangeStatus) // for the exchnage status e.g completed/canclled
 router.get("/exchange/:exchange_id", ensureAuth, exchangeController.getExchangeDetails);
 router.delete("/delete/exchange/request", ensureAuth, exchangeController.DeleteExhanage)
+router.get(
+"/exchange/get/note/:exchange_id",
+exchangeController.getNotes
+);
+
+
+router.post(
+"/exchange/post/note",
+exchangeController.insertNote
+);
+
+
+router.put(
+"/exchange/put/note",
+exchangeController.updateNote
+);
 // router.get("/user/my-room", ensureAuth, exchangeController.GetMyRoom);
 
 module.exports = router

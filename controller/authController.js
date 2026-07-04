@@ -64,12 +64,12 @@ exports.authSignup = async (req, res) => {
     if(referredUsername){
 
       await db.query(
-        "UPDATE users SET points = points + 100 WHERE username=$1",
+        "UPDATE users SET points = points + 50, xp = xp + 50  WHERE username=$1",
         [referredUsername]
       );
 
       await db.query(
-        "UPDATE users SET points = points + 50 WHERE id=$1",
+        "UPDATE users SET points = points + 25, xp = xp + 25 WHERE id=$1",
         [user.id]
       );
 
@@ -130,6 +130,7 @@ exports.GetLeaderBoard = async (req, res) =>{
  ORDER BY points DESC
  LIMIT 20`
 );
+
 
 // console.log(result)
 const response = result.rows
@@ -305,4 +306,45 @@ req.logout(err => {
       res.status(200).json({ success: true });
     })
   })
+};
+
+
+exports.sendUserBadges = async (req, res) => {
+  try {
+    const user_id = req.user?.id;
+
+    if(!user_id){
+      return res.status(401).json({
+        success:false,
+        message:"Unauthorized"
+      });
+    }
+
+    const result = await db.query(
+      `
+      SELECT
+        badges.id,
+        badges.name,
+        badges.icon,
+        user_badges.earned_at
+      FROM user_badges
+      JOIN badges
+      ON badges.id = user_badges.badge_id
+      WHERE user_badges.user_id = $1
+      ORDER BY user_badges.earned_at DESC
+      `,[user_id]
+    );
+
+    return res.status(200).json({
+      success:true,
+      badges: result.rows
+    });
+  } catch(error){
+    console.error("FETCH USER BADGES ERROR:", error);
+
+    return res.status(500).json({
+      success:false,
+      message:"Failed to fetch badges"
+    });
+  }
 };

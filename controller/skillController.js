@@ -14,7 +14,7 @@ exports.home = async (req, res) => {
      skill: skills,
     });
   } catch (err) {
-    console.err(err)
+    console.error(err)
   }
 
 };
@@ -530,96 +530,201 @@ exports.uploadSkillImg = async (req, res) => {
   }
 };
 
-
 exports.createSkill = async (req, res) => {
+  console.log("🚀 ===== CREATE SKILL REQUEST START =====");
+
+  if (!req.file) {
+  console.log("❌ NO FILE RECEIVED");
+  return res.status(400).json({
+    error: "File upload failed (req.file missing)"
+  });
+}
+
   try {
-    // ✅ Check user auth
+    // ================= AUTH =================
+    console.log("🔐 Checking auth...");
+    console.log("req.user:", req.user);
+
     if (!req.user || !req.user.id) {
+      console.log("❌ AUTH FAILED");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // ✅ Check image
+    console.log("✅ Auth passed. User ID:", req.user.id);
+
+    // ================= IMAGE CHECK =================
+    console.log("🖼️ Checking image...");
+    console.log("req.file:", req.file);
+
     if (!req.file) {
+      console.log("❌ IMAGE MISSING");
       return res.status(400).json({ error: "Skill image is required" });
     }
 
-    // ✅ Destructure form fields
-    let { skillname, skilldesc, category, skilllevel, youtube_link, learningPoints, portfolio } = req.body;
+    // ================= BODY =================
+    console.log("📦 Raw req.body:", req.body);
 
-    // If learningPoints comes as string (from FormData), try to parse JSON array
+    let {
+      skillname,
+      skilldesc,
+      category,
+      skilllevel,
+      youtube_link,
+      learningPoints,
+      portfolio_link,
+    } = req.body;
+
+    console.log("✏️ Extracted fields:", {
+      skillname,
+      skilldesc,
+      category,
+      skilllevel,
+      youtube_link,
+      learningPoints,
+      portfolio_link,
+    });
+
+    // ================= PARSE learningPoints =================
+    console.log("📚 Parsing learningPoints...");
+
     if (typeof learningPoints === "string") {
+      console.log("learningPoints is STRING, parsing JSON...");
       try {
         learningPoints = JSON.parse(learningPoints);
+        console.log("✅ Parsed learningPoints:", learningPoints);
       } catch (e) {
-        learningPoints = [learningPoints]; // fallback as single string
+        console.log("❌ JSON parse failed:", e.message);
+        learningPoints = [];
       }
     }
 
-    // Validation rules
-    const validChars = /^[a-zA-Z0-9\s.,!?'-]+$/;
+    if (!Array.isArray(learningPoints)) {
+      console.log("⚠️ learningPoints not array, forcing empty array");
+      learningPoints = [];
+    }
 
-    if (!skillname || skillname.length < 2 || skillname.length > 50) {
+    learningPoints = learningPoints
+      .map((p) => (p || "").trim())
+      .filter((p) => p.length > 0);
+
+    console.log("📚 Final learningPoints:", learningPoints);
+
+    // ================= VALIDATION =================
+    console.log("🧪 Running validations...");
+
+    if (!skillname || skillname.trim().length < 2 || skillname.trim().length > 50) {
+      console.log("❌ Invalid skillname:", skillname);
       return res.status(400).json({ error: "Invalid skill name" });
     }
-    if (!skilldesc || skilldesc.length < 10 || skilldesc.length > 500) {
+
+    if (!skilldesc || skilldesc.trim().length < 10 || skilldesc.trim().length > 500) {
+      console.log("❌ Invalid skilldesc:", skilldesc);
       return res.status(400).json({ error: "Invalid description" });
     }
-    if (!category || category.length < 2 || category.length > 30) {
+
+    if (!category || category.trim().length < 2 || category.trim().length > 50) {
+      console.log("❌ Invalid category:", category);
       return res.status(400).json({ error: "Invalid category" });
     }
-    if (skilllevel && !["Beginner", "Intermediate", "Professional"].includes(skilllevel)) {
+
+    if (
+      skilllevel &&
+      !["Beginner", "Intermediate", "Professional"].includes(skilllevel)
+    ) {
+      console.log("❌ Invalid skilllevel:", skilllevel);
       return res.status(400).json({ error: "Invalid skill level" });
     }
-    if (!validChars.test(skillname) || !validChars.test(skilldesc) || !validChars.test(category)) {
-      return res.status(400).json({ error: "Invalid characters detected" });
-    }
 
-    // Optional: validate YouTube link format
-    if (youtube_link && !/^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/.test(youtube_link)) {
+    console.log("✅ Basic validation passed");
+
+    // ================= OPTIONAL LINKS =================
+    console.log("🔗 Validating links...");
+
+    if (
+      youtube_link &&
+      !/^https?:\/\/(www\.)?youtube\.com\/watch\?v=/.test(youtube_link)
+    ) {
+      console.log("❌ Invalid YouTube link:", youtube_link);
       return res.status(400).json({ error: "Invalid YouTube link" });
     }
 
-    // Optional: validate learningPoints array
-    if (!Array.isArray(learningPoints)) learningPoints = [];
-    learningPoints = learningPoints.map((point) => point.trim()).filter((point) => point.length > 0);
+    if (
+      portfolio_link &&
+      !/^https?:\/\//.test(portfolio_link)
+    ) {
+      console.log("❌ Invalid portfolio link:", portfolio_link);
+      return res.status(400).json({ error: "Invalid portfolio link" });
+    }
 
-    // ✅ Image URLs
-    const imageUrl = req.file.path;       // Cloudinary secure URL
-    const publicId = req.file.public_id;  // Cloudinary public ID
+    console.log("✅ Link validation passed");
 
-    // ✅ Insert into DB
-    await db.query(
+    // ================= IMAGE =================
+    const imageUrl = req.file.path;
+    const publicId = req.file.public_id;
+
+    console.log("☁️ Cloudinary image:", {
+      imageUrl,
+      publicId,
+    });
+
+    // ================= DB INSERT =================
+    console.log("💾 Inserting into database...");
+
+    const result = await db.query(
       `
-      INSERT INTO skills
-      (title, description, category, level, user_id, skill_img, skill_img_public_id, youtubelink, learningpoint, portfolio_link)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO skills (
+        title,
+        description,
+        category,
+        level,
+        user_id,
+        skill_img,
+        skill_img_public_id,
+        youtubelink,
+        learningpoint,
+        portfolio_link
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      RETURNING *
       `,
       [
-        skillname,
-        skilldesc,
-        category,
+        skillname.trim(),
+        skilldesc.trim(),
+        category.trim(),
         skilllevel,
         req.user.id,
         imageUrl,
         publicId,
         youtube_link || null,
-        JSON.stringify(learningPoints), // save array as JSON string
-        portfolio
+        JSON.stringify(learningPoints),
+        portfolio_link || null,
       ]
     );
+
+    console.log("✅ DB INSERT SUCCESS:", result.rows[0]);
+
+    // ================= RESPONSE =================
+    console.log("🎉 Sending response...");
 
     return res.status(201).json({
       success: true,
       message: "Skill created successfully",
-      imageUrl,
-      youtube_link: youtube_link || null,
-      learningPoints,
+      data: {
+        imageUrl,
+        youtube_link: youtube_link || null,
+        learningPoints,
+      },
     });
   } catch (error) {
-    console.error("Error creating skill:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Server error",
-    });
-  }
+  console.log("🔥 FULL ERROR OBJECT:");
+  console.dir(error, { depth: null });
+
+  console.log("🔥 ERROR MESSAGE:", error.message);
+  console.log("🔥 ERROR STACK:", error.stack);
+
+  return res.status(500).json({
+    success: false,
+    error: error.message || "Server error",
+  });
+}
 };

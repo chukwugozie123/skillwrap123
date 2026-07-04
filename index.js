@@ -255,9 +255,19 @@ const verifyEmailRoute = require("./routes/verifyroutes");
 const exchangeMessageRoutes = require("./routes/chatRoute");
 const AiSkillMatch = require("./routes/AiMatchRoutes");
 const chatRoute = require("./routes/chatRoute")
-const AchivementRoute = require('./routes/AchivementRoute')
+const AchivementRoute = require('./routes/AchivementRoute');
+const EventRoute = require("./routes/EventRoute");
+const ActivityRoute = require("./routes/ActivityRoute")
+const XpRoute = require("./routes/XpRoute");
+const aiEventRoute = require("./routes/aiEventRoute");
 
 require("./config/passport"); // Passport config
+
+
+
+const  setupExchangeSocket  = require("./socket/exchangeSocket");
+const  setupEventAISocket = require("./socket/eventAISocket");
+
 
 const app = express();
 const server = http.createServer(app);
@@ -266,19 +276,39 @@ const PORT = process.env.PORT || 4000;
 /* ================= TRUST PROXY ================= */
 app.set("trust proxy", 1);
 
-/* ================= CORS ================= */
+
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:5173",
   "https://skillwrap2026.vercel.app",
 ];
+
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log("🔥 Incoming Origin:", origin);
+
+      // allow requests with no origin (Postman, server-to-server, mobile apps)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+
+      // allow your real frontend origins
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+
+      // allow chrome extensions ONLY in development
+      if (
+        process.env.NODE_ENV === "development" &&
+        origin.startsWith("chrome-extension://")
+      ) {
+        return callback(null, true);
+      }
+
+      console.log("❌ BLOCKED ORIGIN:", origin);
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -320,6 +350,10 @@ app.use("/", exchangeMessageRoutes);
 app.use("/", AiSkillMatch);
 app.use("/", chatRoute);
 app.use("/achievements", AchivementRoute);
+app.use("/", EventRoute);
+app.use("/", ActivityRoute);
+app.use("/", XpRoute);
+app.use("/", aiEventRoute);
 
 
 /* ================= SOCKET.IO ================= */
@@ -351,37 +385,73 @@ function removeUser(socketId) {
   activeUsers = activeUsers.filter(u => u.socketId !== socketId);
 }
 
+const activeExchanges = {}; // { roomId: { interval, endTime, timeLeft } }
 
-// const activeExchanges = {}; // { roomId: { interval, endTime, timeLeft } }
+
+io.on("connection", (socket)=>{
+
+    setupExchangeSocket(io, socket);
+
+    setupEventAISocket(io, socket);
+
+});
 
 // io.on("connection", (socket) => {
 //   console.log("✅ Socket connected:", socket.id);
 
 //   /* ================= ENTER PRIVATE ROOM ================= */
 //   socket.on("enterRoom", async ({ roomId, userId }) => {
-//     try {
-//       if (!roomId || !userId) return;
+//     console.log("📥 enterRoom received:", { roomId, userId });
 
-//       // Check if room exists
-//       const roomRes = await pool.query("SELECT * FROM rooms WHERE exchange_id = $1", [roomId]);
-//       if (roomRes.rows.length === 0) return;
+//     try {
+//       if (!roomId || !userId) {
+//         console.log("❌ Missing roomId or userId");
+//         return;
+//       }
+
+//       const roomRes = await pool.query(
+//         "SELECT * FROM rooms WHERE exchange_id = $1",
+//         [roomId]
+//       );
+
+//       if (roomRes.rows.length === 0) {
+//         console.log("❌ No room found for exchange_id:", roomId);
+//         return;
+//       }
 
 //       const room = roomRes.rows[0];
 //       const socketRoom = `room_001${room.id}`;
+
+//       console.log("🏷 Joining socket room:", socketRoom);
+
 //       socket.join(socketRoom);
 
-//       // Track active user
-//       activeUsers.push({ socketId: socket.id, userId, roomId: room.id, socketRoom });
+//       activeUsers.push({
+//         socketId: socket.id,
+//         userId,
+//         roomId: room.id,
+//         socketRoom
+//       });
 
-//       // Get username
-//       const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+//       const userRes = await pool.query(
+//         "SELECT username FROM users WHERE id = $1",
+//         [userId]
+//       );
+
 //       const username = userRes.rows[0].username;
 
-//       // Welcome message
-//       socket.emit("message", { text: "Welcome to your exchange chat", username: "System", created_at: new Date() });
-//       socket.to(socketRoom).emit("message", { text: `${username} joined the chat`, username: "System", created_at: new Date() });
+//       socket.emit("message", {
+//         text: "Welcome to your exchange chat",
+//         username: "System",
+//         created_at: new Date()
+//       });
 
-//       // Load previous messages
+//       socket.to(socketRoom).emit("message", {
+//         text: `${username} joined the chat`,
+//         username: "System",
+//         created_at: new Date()
+//       });
+
 //       const messagesRes = await pool.query(
 //         `SELECT messages.id, messages.text, messages.created_at, users.username
 //          FROM messages
@@ -390,25 +460,22 @@ function removeUser(socketId) {
 //          ORDER BY messages.created_at ASC`,
 //         [room.id]
 //       );
+
+//       // console.log("📜 Loaded previous messages:", messagesRes.rows.length);
+
 //       socket.emit("previousMessages", messagesRes.rows);
 
-//       // Emit current active users
 //       const usersInRoom = activeUsers.filter(u => u.roomId === room.id);
-//       const usersWithNames = await Promise.all(
-//         usersInRoom.map(async (u) => {
-//           const res = await pool.query("SELECT username FROM users WHERE id = $1", [u.userId]);
-//           return res.rows[0].username;
-//         })
-//       );
-//       io.to(socketRoom).emit("roomUsers", { users: usersWithNames, count: usersWithNames.length });
 
-//       // If a countdown is already running, send current timeLeft
 //       if (activeExchanges[socketRoom]) {
+//         console.log("⏱ Existing countdown found. Sending timeLeft:",
+//           activeExchanges[socketRoom].timeLeft
+//         );
 //         socket.emit("countdown", activeExchanges[socketRoom].timeLeft);
 //       }
 
 //     } catch (err) {
-//       console.error("EnterRoom Error:", err);
+//       console.error("❌ EnterRoom Error:", err);
 //     }
 //   });
 
@@ -445,30 +512,60 @@ function removeUser(socketId) {
 //     socket.to(user.socketRoom).emit("typing", { name });
 //   });
 
+
 //   /* ================= START COUNTDOWN ================= */
 //   socket.on("startCountdown", async ({ roomId, exchangeId, duration }) => {
-//     const socketRoom = `room_001${roomId}`;
-//     if (activeExchanges[socketRoom]) return;
+//     console.log("📥 startCountdown received:", {
+//       roomId,
+//       exchangeId,
+//       duration
+//     });
 
-//     console.log(roomId, exchangeId, duration, 'cheking')
+    
+//       const roomRes = await pool.query(
+//         "SELECT * FROM rooms WHERE exchange_id = $1",
+//         [roomId]
+//       );
+
+//       const room = roomRes.rows[0]
+
+//     const socketRoom = `room_001${room.id}`;
+//     console.log("🏷 Using socketRoom:", socketRoom);
+
+//     if (activeExchanges[socketRoom]) {
+//       console.log("⚠ Countdown already running for this room");
+//       return;
+//     }
 
 //     const endTime = Date.now() + duration * 60 * 1000;
 
 //     const interval = setInterval(async () => {
 //       const diff = endTime - Date.now();
+
 //       const mins = Math.floor(diff / 60000);
 //       const secs = Math.floor((diff % 60000) / 1000);
-//       const formatted = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 
-//       activeExchanges[socketRoom] = { interval, endTime, timeLeft: formatted };
+//       const formatted = `${mins
+//         .toString()
+//         .padStart(2, "0")}:${secs
+//         .toString()
+//         .padStart(2, "0")}`;
+
+//       activeExchanges[socketRoom] = {
+//         interval,
+//         endTime,
+//         timeLeft: formatted
+//       };
+
+//       // console.log("⏳ Emitting countdown:", formatted, "to", socketRoom);
+
 //       io.to(socketRoom).emit("countdown", formatted);
 
-//       console.log(activeExchanges, socketRoom)
-
 //       if (diff <= 0) {
+//         console.log("✅ Countdown finished for room:", socketRoom);
+
 //         clearInterval(interval);
 //         io.to(socketRoom).emit("countdownEnded");
-//         // await pool.query("UPDATE exchanges SET exchange_status='completed' WHERE exchange_id=$1", [exchangeId]);
 //         delete activeExchanges[socketRoom];
 //       }
 //     }, 1000);
@@ -476,280 +573,48 @@ function removeUser(socketId) {
 
 //   /* ================= QUIT EXCHANGE ================= */
 //   socket.on("quitExchange", async ({ roomId, exchangeId }) => {
-//     const socketRoom = `room_001${roomId}`;
+//       const roomRes = await pool.query(
+//         "SELECT * FROM rooms WHERE exchange_id = $1",
+//         [roomId]
+//       );
+
+//       const room = roomRes.rows[0]
+
+//     const socketRoom = `room_001${room.id}`;
+//     console.log("🏷 Quitting socketRoom:", socketRoom);
+
 //     if (activeExchanges[socketRoom]) {
 //       clearInterval(activeExchanges[socketRoom].interval);
 //       delete activeExchanges[socketRoom];
 //     }
 
 //     io.to(socketRoom).emit("exchangeQuit");
-//     // await pool.query("UPDATE exchanges SET exchange_status='quit' WHERE exchange_id=$1", [exchangeId]);
 //   });
 
 //   /* ================= DISCONNECT ================= */
 //   socket.on("disconnect", async () => {
+//     console.log("❌ Socket disconnected:", socket.id);
+
 //     try {
 //       const index = activeUsers.findIndex(u => u.socketId === socket.id);
 //       if (index === -1) return;
+
 //       const user = activeUsers[index];
 //       activeUsers.splice(index, 1);
 
-//       const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [user.userId]);
-//       const leavingUsername = userRes.rows[0].username;
+//       console.log("👋 User removed from activeUsers:", user);
 
 //       io.to(user.socketRoom).emit("message", {
-//         text: `${leavingUsername} left the chat`,
+//         text: `A user left the chat`,
 //         username: "System",
 //         created_at: new Date(),
 //       });
 
-//       // Update room user list
-//       const usersInRoom = activeUsers.filter(u => u.roomId === user.roomId);
-//       const usersWithNames = await Promise.all(
-//         usersInRoom.map(async (u) => {
-//           const res = await pool.query("SELECT username FROM users WHERE id = $1", [u.userId]);
-//           return res.rows[0].username;
-//         })
-//       );
-//       io.to(user.socketRoom).emit("roomUsers", { users: usersWithNames, count: usersWithNames.length });
-
 //     } catch (err) {
-//       console.error("Disconnect Error:", err);
+//       console.error("❌ Disconnect Error:", err);
 //     }
 //   });
 // });
-
-
-
-
-
-
-
-
-
-
-
-const activeExchanges = {}; // { roomId: { interval, endTime, timeLeft } }
-
-io.on("connection", (socket) => {
-  console.log("✅ Socket connected:", socket.id);
-
-  /* ================= ENTER PRIVATE ROOM ================= */
-  socket.on("enterRoom", async ({ roomId, userId }) => {
-    console.log("📥 enterRoom received:", { roomId, userId });
-
-    try {
-      if (!roomId || !userId) {
-        console.log("❌ Missing roomId or userId");
-        return;
-      }
-
-      const roomRes = await pool.query(
-        "SELECT * FROM rooms WHERE exchange_id = $1",
-        [roomId]
-      );
-
-      if (roomRes.rows.length === 0) {
-        console.log("❌ No room found for exchange_id:", roomId);
-        return;
-      }
-
-      const room = roomRes.rows[0];
-      const socketRoom = `room_001${room.id}`;
-
-      console.log("🏷 Joining socket room:", socketRoom);
-
-      socket.join(socketRoom);
-
-      activeUsers.push({
-        socketId: socket.id,
-        userId,
-        roomId: room.id,
-        socketRoom
-      });
-
-      const userRes = await pool.query(
-        "SELECT username FROM users WHERE id = $1",
-        [userId]
-      );
-
-      const username = userRes.rows[0].username;
-
-      socket.emit("message", {
-        text: "Welcome to your exchange chat",
-        username: "System",
-        created_at: new Date()
-      });
-
-      socket.to(socketRoom).emit("message", {
-        text: `${username} joined the chat`,
-        username: "System",
-        created_at: new Date()
-      });
-
-      const messagesRes = await pool.query(
-        `SELECT messages.id, messages.text, messages.created_at, users.username
-         FROM messages
-         JOIN users ON users.id = messages.sender_id
-         WHERE room_id = $1
-         ORDER BY messages.created_at ASC`,
-        [room.id]
-      );
-
-      // console.log("📜 Loaded previous messages:", messagesRes.rows.length);
-
-      socket.emit("previousMessages", messagesRes.rows);
-
-      const usersInRoom = activeUsers.filter(u => u.roomId === room.id);
-
-      if (activeExchanges[socketRoom]) {
-        console.log("⏱ Existing countdown found. Sending timeLeft:",
-          activeExchanges[socketRoom].timeLeft
-        );
-        socket.emit("countdown", activeExchanges[socketRoom].timeLeft);
-      }
-
-    } catch (err) {
-      console.error("❌ EnterRoom Error:", err);
-    }
-  });
-
-  /* ================= SEND MESSAGE ================= */
-  socket.on("message", async ({ text }) => {
-    try {
-      const user = activeUsers.find(u => u.socketId === socket.id);
-      if (!user || !text) return;
-
-      const msgRes = await pool.query(
-        `INSERT INTO messages (room_id, sender_id, text) VALUES ($1, $2, $3) RETURNING *`,
-        [user.roomId, user.userId, text]
-      );
-
-      const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [user.userId]);
-      const username = userRes.rows[0].username;
-
-      io.to(user.socketRoom).emit("message", {
-        id: msgRes.rows[0].id,
-        text: msgRes.rows[0].text,
-        username,
-        created_at: msgRes.rows[0].created_at,
-      });
-
-    } catch (err) {
-      console.error("Message Error:", err);
-    }
-  });
-
-  /* ================= TYPING ================= */
-  socket.on("typing", ({ name }) => {
-    const user = activeUsers.find(u => u.socketId === socket.id);
-    if (!user) return;
-    socket.to(user.socketRoom).emit("typing", { name });
-  });
-
-
-  /* ================= START COUNTDOWN ================= */
-  socket.on("startCountdown", async ({ roomId, exchangeId, duration }) => {
-    console.log("📥 startCountdown received:", {
-      roomId,
-      exchangeId,
-      duration
-    });
-
-    
-      const roomRes = await pool.query(
-        "SELECT * FROM rooms WHERE exchange_id = $1",
-        [roomId]
-      );
-
-      const room = roomRes.rows[0]
-
-    const socketRoom = `room_001${room.id}`;
-    console.log("🏷 Using socketRoom:", socketRoom);
-
-    if (activeExchanges[socketRoom]) {
-      console.log("⚠ Countdown already running for this room");
-      return;
-    }
-
-    const endTime = Date.now() + duration * 60 * 1000;
-
-    const interval = setInterval(async () => {
-      const diff = endTime - Date.now();
-
-      const mins = Math.floor(diff / 60000);
-      const secs = Math.floor((diff % 60000) / 1000);
-
-      const formatted = `${mins
-        .toString()
-        .padStart(2, "0")}:${secs
-        .toString()
-        .padStart(2, "0")}`;
-
-      activeExchanges[socketRoom] = {
-        interval,
-        endTime,
-        timeLeft: formatted
-      };
-
-      // console.log("⏳ Emitting countdown:", formatted, "to", socketRoom);
-
-      io.to(socketRoom).emit("countdown", formatted);
-
-      if (diff <= 0) {
-        console.log("✅ Countdown finished for room:", socketRoom);
-
-        clearInterval(interval);
-        io.to(socketRoom).emit("countdownEnded");
-        delete activeExchanges[socketRoom];
-      }
-    }, 1000);
-  });
-
-  /* ================= QUIT EXCHANGE ================= */
-  socket.on("quitExchange", async ({ roomId, exchangeId }) => {
-      const roomRes = await pool.query(
-        "SELECT * FROM rooms WHERE exchange_id = $1",
-        [roomId]
-      );
-
-      const room = roomRes.rows[0]
-
-    const socketRoom = `room_001${room.id}`;
-    console.log("🏷 Quitting socketRoom:", socketRoom);
-
-    if (activeExchanges[socketRoom]) {
-      clearInterval(activeExchanges[socketRoom].interval);
-      delete activeExchanges[socketRoom];
-    }
-
-    io.to(socketRoom).emit("exchangeQuit");
-  });
-
-  /* ================= DISCONNECT ================= */
-  socket.on("disconnect", async () => {
-    console.log("❌ Socket disconnected:", socket.id);
-
-    try {
-      const index = activeUsers.findIndex(u => u.socketId === socket.id);
-      if (index === -1) return;
-
-      const user = activeUsers[index];
-      activeUsers.splice(index, 1);
-
-      console.log("👋 User removed from activeUsers:", user);
-
-      io.to(user.socketRoom).emit("message", {
-        text: `A user left the chat`,
-        username: "System",
-        created_at: new Date(),
-      });
-
-    } catch (err) {
-      console.error("❌ Disconnect Error:", err);
-    }
-  });
-});
 
 
 
@@ -779,205 +644,3 @@ server.listen(PORT, () => {
 //   }
 // };
 // startServer();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// /* ================= SOCKET STATE ================= */
-// let activeUsers = [];
-
-// function getUser(socketId) {
-//   return activeUsers.find(u => u.socketId === socketId);
-// }
-
-// function removeUser(socketId) {
-//   activeUsers = activeUsers.filter(u => u.socketId !== socketId);
-// }
-
-
-//  ================= SOCKET EVENTS ================= */
-// io.on("connection", (socket) => {
-//   console.log("✅ Socket connected:", socket.id);
-
-//   // Join a room
-//   socket.on("enterRoom", async ({ roomName, userId }) => {
-//     try {
-//       if (!roomName || !userId) return;
-
-//       // Get or create room
-//       let roomRes = await pool.query("SELECT * FROM rooms WHERE name = $1", [roomName]);
-//       let room;
-//       if (roomRes.rows.length === 0) {
-//         const newRoom = await pool.query("INSERT INTO rooms (name) VALUES ($1) RETURNING *", [roomName]);
-//         room = newRoom.rows[0];
-//       } else {
-//         room = roomRes.rows[0];
-//       }
-
-//       // Join socket room
-//       socket.join(room.name);
-
-//       // Track active user
-//       activeUsers.push({
-//         socketId: socket.id,
-//         userId,
-//         roomId: room.id,
-//         roomName: room.name,
-//       });
-
-//       // Get username of joining user
-//       const joiningUserRes = await pool.query(
-//         "SELECT username FROM users WHERE id = $1",
-//         [userId]
-//       );
-//       const joiningUsername = joiningUserRes.rows[0].username;
-
-//       // Welcome message to joining user
-//       socket.emit("message", {
-//         text: `Welcome to ${room.name}`,
-//         username: "System",
-//         created_at: new Date(),
-//       });
-
-//       // Notify others in room
-//       socket.to(room.name).emit("message", {
-//         text: `${joiningUsername} joined ${room.name}`,
-//         username: "System",
-//         created_at: new Date(),
-//       });
-
-//       // Send updated user list to room
-//       const usersInRoom = activeUsers.filter(u => u.roomName === room.name);
-//       const usersWithNames = await Promise.all(
-//         usersInRoom.map(async (u) => {
-//           const res = await pool.query("SELECT username FROM users WHERE id = $1", [u.userId]);
-//           return res.rows[0].username;
-//         })
-//       );
-
-//       io.to(room.name).emit("roomUsers", {
-//         users: usersWithNames,
-//         count: usersWithNames.length,
-//       });
-
-//       // Save membership
-//       await pool.query(
-//         `INSERT INTO room_members (room_id, user_id)
-//          VALUES ($1, $2)
-//          ON CONFLICT (room_id, user_id) DO NOTHING`,
-//         [room.id, userId]
-//       );
-
-//       // Load last 100 messages
-//       const messagesRes = await pool.query(
-//         `SELECT messages.id, messages.text, messages.created_at, users.username
-//          FROM messages
-//          JOIN users ON users.id = messages.sender_id
-//          WHERE room_id = $1
-//          ORDER BY created_at ASC
-//          LIMIT 100`,
-//         [room.id]
-//       );
-
-//       socket.emit("previousMessages", messagesRes.rows);
-
-//     } catch (err) {
-//       console.error("EnterRoom Error:", err);
-//     }
-//   });
-
-//   // Send message
-//   socket.on("message", async ({ text }) => {
-//     try {
-//       const user = getUser(socket.id);
-//       if (!user || !text) return;
-
-//       // Save message
-//       const msgRes = await pool.query(
-//         `INSERT INTO messages (room_id, sender_id, text)
-//          VALUES ($1, $2, $3) RETURNING *`,
-//         [user.roomId, user.userId, text]
-//       );
-
-//       // Get username
-//       const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [user.userId]);
-//       const username = userRes.rows[0].username;
-
-//       // Emit to room
-//       io.to(user.roomName).emit("message", {
-//         id: msgRes.rows[0].id,
-//         text: msgRes.rows[0].text,
-//         username,
-//         created_at: msgRes.rows[0].created_at,
-//       });
-
-//     } catch (err) {
-//       console.error("Message Error:", err);
-//     }
-//   });
-
-//   // Typing indicator
-//   socket.on("typing", ({ name }) => {
-//     const user = getUser(socket.id);
-//     if (!user) return;
-//     socket.to(user.roomName).emit("typing", { name });
-//   });
-
-//   // Disconnect
-//   socket.on("disconnect", async () => {
-//     const user = getUser(socket.id);
-//     if (user) {
-//       removeUser(socket.id);
-
-//       const usersInRoom = activeUsers.filter(u => u.roomName === user.roomName);
-//       const usersWithNames = await Promise.all(
-//         usersInRoom.map(async (u) => {
-//           const res = await pool.query("SELECT username FROM users WHERE id = $1", [u.userId]);
-//           return res.rows[0].username;
-//         })
-//       );
-
-//       // Get leaving username
-//       const userRes = await pool.query("SELECT username FROM users WHERE id = $1", [user.userId]);
-//       const leavingUsername = userRes.rows[0].username;
-
-//       // Notify room
-//       io.to(user.roomName).emit("message", {
-//         text: `${leavingUsername} left ${user.roomName}`,
-//         username: "System",
-//         created_at: new Date(),
-//       });
-
-//       // Update room user list
-//       io.to(user.roomName).emit("roomUsers", {
-//         users: usersWithNames,
-//         count: usersWithNames.length,
-//       });
-//     }
-//   });
-// });

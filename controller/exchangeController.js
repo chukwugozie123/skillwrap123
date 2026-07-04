@@ -122,8 +122,8 @@ exports.getReceivedRequests = async (req, res) => {
         es.skill_requested_id,
         es.status,
         es.exchange_status,
-        es.mode,
         es.note,
+        es.mode,
         es.created_at,
 
         -- Sender info
@@ -187,10 +187,6 @@ exports.updateStatus = async (req, res) => {
     const userId = req.user?.id;
     const { status, exchange_id } = req.body;
 
-    console.log("User:", userId);
-    console.log("Exchange ID:", exchange_id);
-    console.log("New Status:", status);
-
     if (!exchange_id || !status) {
       console.log("❌ Missing fields");
       return res.status(400).json({ success: false, error: "Missing fields" });
@@ -236,25 +232,9 @@ exports.updateStatus = async (req, res) => {
           [exchange_id, `exchange-${exchange_id}`, userId]
         );
 
-        console.log("Room created:", newRoom.rows);
 
         roomId = newRoom.rows[0].id;
 
-        console.log("New Room ID:", roomId);
-
-        // Insert both users into room_members
-        // await db.query(
-        //   `INSERT INTO room_members (room_id, user_id)
-        //    VALUES ($1, $2), ($1, $3)
-        //    ON CONFLICT DO NOTHING`,
-        //   [
-        //     roomId,
-        //     exchangeData.from_user_id,
-        //     exchangeData.to_user_id,
-        //   ]
-        // );
-
-        console.log("Room members inserted");
       } else {
         console.log("Room already exists. Skipping creation.");
       }
@@ -277,46 +257,6 @@ exports.updateStatus = async (req, res) => {
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
-
-
-
-
-// exports.updateStatus = async (req, res) => {
-//   try {
-
-//     // const exchange_id = req.user?.id
-//     const userId = req.user?.id
-//     const { status, exchange_id } = req.body;
-
-//     console.log(userId)
-
-//     if (!exchange_id || !status) {
-//       return res.json({ success: false, error: "Missing fields" });
-//     }
-
-//     if (status === "accepted") {
-//       await db.query(
-//       `UPDATE exchange_skills SET status = $1 WHERE id = $2`,
-//       [status, exchange_id]
-//     );    
-    
-//       await db.query(
-//         `INSERT INTO rooms (exchange_id, name, user_id) VALUES ($1, $2, $3)`,
-//         [exchange_id, userId]
-//       )
-//     } else {
-//       await db.query(
-//       `UPDATE exchange_skills SET status = $1 WHERE id = $2`,
-//       [status, exchange_id]
-//     );
-//     }
-
-//     res.json({ success: true });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ success: false, error: "Server error" });
-//   }
-// };
 
 
 exports.updateExchangeStatus = async (req, res) => {
@@ -454,3 +394,217 @@ exports.DeleteExhanage = async (req, res) => {
 // //     request: result.rows
 // //   })
 // // };
+
+
+
+
+
+exports.getNotes = async(req,res)=>{
+
+const {exchange_id}=req.params;
+
+
+try{
+
+
+const result =
+await db.query(
+`
+SELECT *
+
+FROM exchange_notes
+
+WHERE exchange_id=$1
+
+ORDER BY updated_at DESC
+
+`,
+[
+exchange_id
+]
+);
+
+res.json({
+
+success:true,
+
+notes:result.rows
+
+});
+
+
+}catch(error){
+
+
+console.error(
+"GET NOTES ERROR:",
+error
+);
+
+
+res.status(500).json({
+
+success:false,
+
+message:"Error getting notes"
+
+});
+
+
+}
+
+};
+
+
+
+
+
+exports.insertNote = async(req,res)=>{
+
+
+const {
+exchange_id,
+content
+}=req.body;
+
+
+const userId=req.user?.id;
+
+
+try{
+
+
+const result =
+await db.query(
+`
+INSERT INTO exchange_notes
+(
+exchange_id,
+user_id,
+content
+)
+
+VALUES($1,$2,$3)
+
+RETURNING *
+
+`,
+[
+exchange_id,
+userId,
+content
+]
+);
+
+
+
+res.json({
+
+success:true,
+
+note:result.rows[0],
+
+message:"Successfully created note"
+
+});
+
+
+
+}catch(error){
+
+
+console.error(
+"CREATE NOTE ERROR:",
+error
+);
+
+
+res.status(500).json({
+
+success:false,
+
+message:"Error creating note"
+
+});
+
+
+}
+
+};
+
+
+
+
+
+
+exports.updateNote = async(req,res)=>{
+
+
+const {
+id,
+content
+}=req.body;
+
+const userId=req.user?.id;
+
+console.log(id, content, userId)
+try{
+
+
+const result =
+await db.query(
+`
+UPDATE exchange_notes
+
+SET 
+content=$1,
+updated_at=NOW()
+
+WHERE exchange_id=$2
+
+AND user_id=$3
+
+RETURNING *
+
+`,
+[
+content,
+id,
+userId
+]
+);
+
+
+res.json({
+
+success:true,
+
+note:result.rows[0],
+
+message:"Successfully updated note"
+
+});
+
+
+
+}catch(error){
+
+
+console.error(
+"UPDATE NOTE ERROR:",
+error
+);
+
+
+res.status(500).json({
+
+success:false,
+
+message:"Error updating note"
+
+});
+
+
+}
+
+};
