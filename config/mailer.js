@@ -1,29 +1,29 @@
-// // config/mailer.js
-// require("dotenv").config();
-// const { Resend } = require("resend");
+// config/mailer.js
+require("dotenv").config();
+const { Resend } = require("resend");
 
-// if (!process.env.RESEND_API_KEY) {
-//   throw new Error("Missing RESEND_API_KEY in environment variables");
-// }
+if (!process.env.RESEND_API_KEY) {
+  throw new Error("Missing RESEND_API_KEY in environment variables");
+}
 
-// const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// module.exports = async function sendEmail({ to, subject, text, html }) {
-//   try {
-//     const response = await resend.emails.send({
-//        from: "Skillwrap <noreply@skillwrap.com>", // must be verified sender
-//       to,
-//       subject,
-//       text,
-//       html,
-//     });
-//     // console.log("📬 Email sent via Resend:", response);
-//     return response;
-//   } catch (err) {
-//     console.error("❌ Resend send email error:", err);
-//     throw err;
-//   }
-// };
+module.exports = async function sendEmail({ to, subject, text, html }) {
+  try {
+    const response = await resend.emails.send({
+       from: "Skillwrap <noreply@skillwrap.com>", // must be verified sender
+      to,
+      subject,
+      text,
+      html,
+    });
+    // console.log("📬 Email sent via Resend:", response);
+    return response;
+  } catch (err) {
+    console.error("❌ Resend send email error:", err);
+    throw err;
+  }
+};
 
 
 
