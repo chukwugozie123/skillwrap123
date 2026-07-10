@@ -530,6 +530,7 @@ exports.uploadSkillImg = async (req, res) => {
   }
 };
 
+
 exports.createSkill = async (req, res) => {
   console.log("🚀 ===== CREATE SKILL REQUEST START =====");
 
@@ -587,16 +588,16 @@ exports.createSkill = async (req, res) => {
     // ================= PARSE learningPoints =================
     console.log("📚 Parsing learningPoints...");
 
-    if (typeof learningPoints === "string") {
-      console.log("learningPoints is STRING, parsing JSON...");
-      try {
-        learningPoints = JSON.parse(learningPoints);
-        console.log("✅ Parsed learningPoints:", learningPoints);
-      } catch (e) {
-        console.log("❌ JSON parse failed:", e.message);
-        learningPoints = [];
-      }
-    }
+    // if (typeof learningPoints === "string") {
+    //   console.log("learningPoints is STRING, parsing JSON...");
+    //   try {
+    //     learningPoints = JSON.parse(learningPoints);
+    //     console.log("✅ Parsed learningPoints:", learningPoints);
+    //   } catch (e) {
+    //     console.log("❌ JSON parse failed:", e.message);
+    //     learningPoints = [];
+    //   }
+    // }
 
     if (!Array.isArray(learningPoints)) {
       console.log("⚠️ learningPoints not array, forcing empty array");
@@ -662,13 +663,9 @@ exports.createSkill = async (req, res) => {
     const imageUrl = req.file.path;
     const publicId = req.file.public_id;
 
-    console.log("☁️ Cloudinary image:", {
-      imageUrl,
-      publicId,
-    });
 
     // ================= DB INSERT =================
-    console.log("💾 Inserting into database...");
+    // console.log("💾 Inserting into database...");
 
     const result = await db.query(
       `
@@ -701,7 +698,7 @@ exports.createSkill = async (req, res) => {
       ]
     );
 
-    console.log("✅ DB INSERT SUCCESS:", result.rows[0]);
+    // console.log("✅ DB INSERT SUCCESS:", result.rows[0]);
 
     // ================= RESPONSE =================
     console.log("🎉 Sending response...");
@@ -716,7 +713,8 @@ exports.createSkill = async (req, res) => {
       },
     });
   } catch (error) {
-  console.log("🔥 FULL ERROR OBJECT:");
+    console.error(JSON.stringify(error.message, null, 2));
+  // console.log("🔥 FULL ERROR OBJECT:");
   console.dir(error, { depth: null });
 
   console.log("🔥 ERROR MESSAGE:", error.message);

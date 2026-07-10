@@ -355,6 +355,18 @@ app.use("/", ActivityRoute);
 app.use("/", XpRoute);
 app.use("/", aiEventRoute);
 
+app.use((err, req, res, next) => {
+  console.error("========== GLOBAL ERROR ==========");
+  console.error(err);
+  console.error(err.stack);
+
+  res.status(500).json({
+    success: false,
+    message: err.message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
+
 
 /* ================= SOCKET.IO ================= */
 const io = new Server(server, {
