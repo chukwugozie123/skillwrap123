@@ -1,6 +1,8 @@
 const passport = require("passport");
 const db = require("../modules/db");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const sendEmail = require("../config/mailer");
 // const verifyemailController = require("../controller/verifyemailController");
 
 
@@ -346,5 +348,473 @@ exports.sendUserBadges = async (req, res) => {
       success:false,
       message:"Failed to fetch badges"
     });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  console.log("========== FORGOT PASSWORD ==========");
+
+  try {
+    const { email } = req.body;
+
+    console.log("Incoming email:", email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required.",
+      });
+    }
+
+    // Find user
+    const user = await db.query(
+      `
+      SELECT id, email, fullname
+      FROM users
+      WHERE email=$1
+      `,
+      [email]
+    );
+
+
+    // Don't reveal if email exists
+    if (user.rows.length === 0) {
+
+      return res.json({
+        success: true,
+        message:
+          "If an account exists, a password reset link has been sent.",
+      });
+
+    }
+
+
+    console.log("User found:", user.rows[0]);
+
+
+    // Generate reset token
+    const resetToken = crypto
+      .randomBytes(32)
+      .toString("hex");
+
+
+    // Hash token before saving
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+
+    // 15 minutes expiry
+    const expires = Date.now() + 1000 * 60 * 15;
+
+
+    await db.query(
+      `
+      UPDATE users
+      SET 
+      reset_password_token=$1,
+      reset_password_expires=$2
+      WHERE email=$3
+      `,
+      [
+        hashedToken,
+        expires,
+        email
+      ]
+    );
+
+
+    console.log("Reset token saved");
+
+
+    const resetLink =
+      `https://skillwrap2026.vercel.app/reset-password?token=${resetToken}`;
+
+
+
+      // SEND EMAIL
+try {
+
+
+//   await sendEmail({
+//   to: "juliegreat05@gmail.com",
+//   subject: "Testing Gmail SMTP",
+//   text: "Hello! This is a plain text email from SkillWrap.",
+// });
+  const emailResponse = await sendEmail({
+
+    to: email,
+
+    subject:
+      "🔐 Reset Your SkillWrap Password",
+
+    text: `
+Hello ${user.rows[0].fullname || "User"},
+
+We received a request to reset your SkillWrap password.
+
+Click the link below to create a new password:
+
+${resetLink}
+
+This link expires in 15 minutes.
+
+If you did not request this, you can ignore this email.
+
+- SkillWrap Team
+    `,
+
+
+    html: `
+
+    <div style="
+      font-family:Arial,sans-serif;
+      background:#020617;
+      padding:40px;
+      color:white;
+    ">
+
+      <div style="
+        max-width:500px;
+        margin:auto;
+        background:#0f172a;
+        padding:30px;
+        border-radius:20px;
+        border:1px solid #1e3a8a;
+      ">
+
+
+        <h1 style="color:#38bdf8;">
+          SkillWrap Password Reset 🔐
+        </h1>
+
+
+        <p>
+          Hello ${user.rows[0].fullname || "User"},
+        </p>
+
+
+        <p>
+          We received a request to reset your password.
+        </p>
+
+
+        <a href="${resetLink}"
+        style="
+          display:inline-block;
+          padding:14px 25px;
+          background:#06b6d4;
+          color:white;
+          text-decoration:none;
+          border-radius:10px;
+          margin:20px 0;
+        ">
+          Reset Password
+        </a>
+
+
+        <p>
+          This link expires in 15 minutes.
+        </p>
+
+
+        <p>
+          If you did not request this, ignore this email.
+        </p>
+
+
+        <hr/>
+
+
+        <small>
+          © ${new Date().getFullYear()} SkillWrap
+        </small>
+
+
+      </div>
+
+    </div>
+
+    `
+  });
+
+
+  console.log(
+    "✅ Password reset email sent successfully:",
+    emailResponse
+  );
+
+
+} catch(emailError) {
+
+
+  console.error(
+    "❌ Failed to send password reset email:",
+    emailError
+  );
+
+
+  return res.status(500).json({
+
+    success:false,
+
+    message:"Failed to send reset email"
+
+  });
+
+}
+
+//     // SEND EMAIL
+//     await sendEmail({
+
+//       to: email,
+
+//       subject:
+//         "🔐 Reset Your SkillWrap Password",
+
+//       text: `
+// Hello ${user.rows[0].fullname || "User"},
+
+// We received a request to reset your SkillWrap password.
+
+// Click the link below to create a new password:
+
+// ${resetLink}
+
+// This link expires in 15 minutes.
+
+// If you did not request this, you can ignore this email.
+
+// - SkillWrap Team
+//       `,
+
+
+//       html: `
+
+//       <div style="
+//         font-family:Arial,sans-serif;
+//         background:#020617;
+//         padding:40px;
+//         color:white;
+//       ">
+
+//         <div style="
+//           max-width:500px;
+//           margin:auto;
+//           background:#0f172a;
+//           padding:30px;
+//           border-radius:20px;
+//           border:1px solid #1e3a8a;
+//         ">
+
+
+//           <h1 style="color:#38bdf8;">
+//             SkillWrap Password Reset 🔐
+//           </h1>
+
+
+//           <p>
+//             Hello ${user.rows[0].fullname || "User"},
+//           </p>
+
+
+//           <p>
+//             We received a request to reset your password.
+//           </p>
+
+
+//           <a href="${resetLink}"
+//           style="
+//             display:inline-block;
+//             padding:14px 25px;
+//             background:#06b6d4;
+//             color:white;
+//             text-decoration:none;
+//             border-radius:10px;
+//             margin:20px 0;
+//           ">
+//             Reset Password
+//           </a>
+
+
+//           <p>
+//             This link expires in 15 minutes.
+//           </p>
+
+
+//           <p>
+//             If you did not request this, ignore this email.
+//           </p>
+
+
+//           <hr/>
+
+
+//           <small>
+//             © ${new Date().getFullYear()} SkillWrap
+//           </small>
+
+
+//         </div>
+
+//       </div>
+
+//       `
+//     });
+
+
+
+    return res.json({
+
+      success:true,
+
+      message:
+      "Password reset link sent successfully."
+
+    });
+
+
+  } catch(error){
+
+    console.error("Forgot password error:", error);
+
+
+    return res.status(500).json({
+
+      success:false,
+
+      message:"Server Error"
+
+    });
+
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  console.log("========== RESET PASSWORD ==========");
+
+  try {
+    const {
+      token,
+      password,
+      confirmPassword,
+    } = req.body;
+
+    console.log("Incoming data:", {
+      token: token ? "Received" : "Missing",
+      password: password ? "Received" : "Missing",
+      confirmPassword: confirmPassword ? "Received" : "Missing",
+    });
+
+    // Validate token
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset token is required.",
+      });
+    }
+
+    // Validate password
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password is required.",
+      });
+    }
+
+    // Validate confirm password
+    if (!confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Confirm password is required.",
+      });
+    }
+
+    // Passwords must match
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match.",
+      });
+    }
+
+    console.log("✅ Validation passed.");
+
+    // Next step:
+    // Hash token
+    // Find user
+    // Check expiry
+    // Hash password
+    // Update database
+
+    return res.json({
+      success: true,
+      message: "Validation passed. Ready to reset password.",
+    });
+
+  } catch (error) {
+    console.error("RESET PASSWORD ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+exports.verifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing token",
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const user = await db.query(
+      `
+      SELECT id
+      FROM users
+      WHERE
+      reset_password_token=$1
+      AND
+      reset_password_expires > $2
+      `,
+      [
+        hashedToken,
+        Date.now(),
+      ]
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        expired: true,
+        message: "Reset link has expired or is invalid.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      valid: true,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+
   }
 };

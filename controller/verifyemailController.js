@@ -57,12 +57,101 @@ exports.sendOtpVerificationEmail = async (req, res) => {
 
     console.log("📤 Attempting to send email...");
 
+    // const result = await sendEmail({
+    //   to: email,
+    //   subject: "Welcome to SkillWrap 🚀.. It's time to Verify Your Skillwrap Email Address",
+    //   text: `Hello ${userRes.rows[0].fullname || "User"}, your OTP is ${otp}`,
+    //   html: `<h2>Your SkillWrap OTP</h2><h1>${otp}</h1>`
+    // });
+
     const result = await sendEmail({
-      to: email,
-      subject: "Verify Your Skillwrap Email Address",
-      text: `Hello ${userRes.rows[0].fullname || "User"}, your OTP is ${otp}`,
-      html: `<h2>Your SkillWrap OTP</h2><h1>${otp}</h1>`
-    });
+  to: email,
+  subject: "🚀 Verify Your SkillWrap Email Address",
+
+  text: `
+Hello ${userRes.rows[0].fullname || "User"},
+
+Welcome to SkillWrap!
+
+Your verification code is:
+
+${otp}
+
+This code expires soon. Do not share it with anyone.
+
+Start learning, teaching, and exchanging skills worldwide.
+
+- SkillWrap Team
+`,
+
+  html: `
+  <div style="
+    font-family: Arial, sans-serif;
+    background:#020617;
+    padding:40px;
+    color:white;
+  ">
+
+    <div style="
+      max-width:500px;
+      margin:auto;
+      background:#0f172a;
+      padding:30px;
+      border-radius:20px;
+      border:1px solid #1e3a8a;
+    ">
+
+      <h1 style="color:#38bdf8;">
+        Welcome to SkillWrap 🚀
+      </h1>
+
+      <p>
+        Hello ${userRes.rows[0].fullname || "User"},
+      </p>
+
+      <p>
+        Verify your email address to start learning,
+        teaching, and exchanging skills.
+      </p>
+
+      <div style="
+        background:#020617;
+        padding:20px;
+        text-align:center;
+        border-radius:15px;
+        margin:25px 0;
+      ">
+
+        <h2>Your Verification Code</h2>
+
+        <h1 style="
+          color:#22d3ee;
+          letter-spacing:8px;
+        ">
+          ${otp}
+        </h1>
+
+      </div>
+
+      <p>
+        This code expires soon. Do not share this code with anyone.
+      </p>
+
+      <p>
+        Learn • Teach • Exchange • Grow
+      </p>
+
+      <hr/>
+
+      <small>
+        © ${new Date().getFullYear()} SkillWrap
+      </small>
+
+    </div>
+
+  </div>
+  `
+});
 
     console.log("✅ Email send result:", result);
 
@@ -127,20 +216,109 @@ exports.resendEmailOtp = async (req, res) => {
 
     console.log("📤 Sending resend OTP email...");
 
-    const emailResponse = await sendEmail({
-      to: email,
-      subject: "Resend OTP - Skillwrap Email Verification",
-      text: `Hello ${userRes.rows[0].fullname || "User"}, Your new OTP is ${otp}`,
-      html: `
-        <div style="font-family:sans-serif; line-height:1.6;">
-          <h2>Email Verification - Resend OTP</h2>
-          <p>Hello <strong>${userRes.rows[0].fullname || "User"}</strong>,</p>
-          <p>Your new OTP:</p>
-          <h1>${otp}</h1>
-          <p>This OTP expires in 1 hour.</p>
-        </div>
-      `
-    });
+    const emailResponse= await sendEmail({
+  to: email,
+  subject: "🚀 Verify Your SkillWrap Email Address",
+
+  text: `
+Hello ${userRes.rows[0].fullname || "User"},
+
+Welcome to SkillWrap!
+
+Your verification code is:
+
+${otp}
+
+This code expires soon. Do not share it with anyone.
+
+Start learning, teaching, and exchanging skills worldwide.
+
+- SkillWrap Team
+`,
+
+  html: `
+  <div style="
+    font-family: Arial, sans-serif;
+    background:#020617;
+    padding:40px;
+    color:white;
+  ">
+
+    <div style="
+      max-width:500px;
+      margin:auto;
+      background:#0f172a;
+      padding:30px;
+      border-radius:20px;
+      border:1px solid #1e3a8a;
+    ">
+
+      <h1 style="color:#38bdf8;">
+        Welcome to SkillWrap 🚀
+      </h1>
+
+      <p>
+        Hello ${userRes.rows[0].fullname || "User"},
+      </p>
+
+      <p>
+        Verify your email address to start learning,
+        teaching, and exchanging skills.
+      </p>
+
+      <div style="
+        background:#020617;
+        padding:20px;
+        text-align:center;
+        border-radius:15px;
+        margin:25px 0;
+      ">
+
+        <h2>Your Verification Code</h2>
+
+        <h1 style="
+          color:#22d3ee;
+          letter-spacing:8px;
+        ">
+          ${otp}
+        </h1>
+
+      </div>
+
+      <p>
+        This code expires soon. Do not share this code with anyone.
+      </p>
+
+      <p>
+        Learn • Teach • Exchange • Grow
+      </p>
+
+      <hr/>
+
+      <small>
+        © ${new Date().getFullYear()} SkillWrap
+      </small>
+
+    </div>
+
+  </div>
+  `
+});
+
+    // const emailResponse = await sendEmail({
+    //   to: email,
+    //   subject: "Resend OTP - Skillwrap Email Verification",
+    //   text: `Hello ${userRes.rows[0].fullname || "User"}, Your new OTP is ${otp}`,
+    //   html: `
+    //     <div style="font-family:sans-serif; line-height:1.6;">
+    //       <h2>Email Verification - Resend OTP</h2>
+    //       <p>Hello <strong>${userRes.rows[0].fullname || "User"}</strong>,</p>
+    //       <p>Your new OTP:</p>
+    //       <h1>${otp}</h1>
+    //       <p>This OTP expires in 1 hour.</p>
+    //     </div>
+    //   `
+    // });
 
     console.log("📬 Email response from provider:", emailResponse);
 

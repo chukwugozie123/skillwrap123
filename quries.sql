@@ -859,3 +859,10 @@ file_type VARCHAR(100),
 created_at TIMESTAMP DEFAULT NOW()
 
 );
+
+
+
+
+ALTER TABLE users
+ADD COLUMN reset_password_token TEXT,
+ADD COLUMN reset_password_expires BIGINT;
