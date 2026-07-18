@@ -6,11 +6,16 @@ if (!process.env.EMAIL || !process.env.APP_PASSWORD) {
 }
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL,
     pass: process.env.APP_PASSWORD,
   },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
 
 module.exports = async function sendEmail({
@@ -20,6 +25,9 @@ module.exports = async function sendEmail({
   html,
 }) {
   try {
+    await transporter.verify();
+    console.log("✅ SMTP Connected");
+
     const response = await transporter.sendMail({
       from: `"SkillWrap" <${process.env.EMAIL}>`,
       to,
@@ -32,7 +40,7 @@ module.exports = async function sendEmail({
 
     return response;
   } catch (err) {
-    console.error("❌ Nodemailer send email error:", err.message);
+    console.error("❌ Nodemailer Error:", err);
     throw err;
   }
 };
@@ -48,64 +56,120 @@ module.exports = async function sendEmail({
 
 
 
-// require("dotenv").config();
-// const { Resend } = require("resend");
 
-// if (!process.env.RESEND_API_KEY) {
-//   throw new Error("Missing RESEND_API_KEY in environment variables");
+
+
+
+
+// require("dotenv").config();
+// const nodemailer = require("nodemailer");
+
+// if (!process.env.EMAIL || !process.env.APP_PASSWORD) {
+//   throw new Error("Missing EMAIL or APP_PASSWORD in environment variables");
 // }
 
-
-// const resend = new Resend(process.env.RESEND_API_KEY);
-
-
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL,
+//     pass: process.env.APP_PASSWORD,
+//   },
+// });
 
 // module.exports = async function sendEmail({
 //   to,
 //   subject,
 //   text,
-//   html
+//   html,
 // }) {
-
 //   try {
-
-//     const response = await resend.emails.send({
-
-//       from: "SkillWrap <onboarding@resend.dev>",
-
+//     const response = await transporter.sendMail({
+//       from: `"SkillWrap" <${process.env.EMAIL}>`,
 //       to,
-
 //       subject,
-
 //       text,
-
 //       html,
-
 //     });
 
-
-//     console.log("📬 Resend response:", response);
-
-
-//     // IMPORTANT
-//     if (response.error) {
-//       throw new Error(response.error.message);
-//     }
-
+//     console.log("📬 Email sent:", response.messageId);
 
 //     return response;
-
-
-//   } catch(err) {
-
-//     console.error(
-//       "❌ Resend send email error:",
-//       err.message
-//     );
-
+//   } catch (err) {
+//     console.error("❌ Nodemailer send email error:", err.message);
 //     throw err;
-
 //   }
 // };
+
+
+
+
+
+
+
+
+
+
+
+
+// // require("dotenv").config();
+// // const { Resend } = require("resend");
+
+// // if (!process.env.RESEND_API_KEY) {
+// //   throw new Error("Missing RESEND_API_KEY in environment variables");
+// // }
+
+
+// // const resend = new Resend(process.env.RESEND_API_KEY);
+
+
+
+// // module.exports = async function sendEmail({
+// //   to,
+// //   subject,
+// //   text,
+// //   html
+// // }) {
+
+// //   try {
+
+// //     const response = await resend.emails.send({
+
+// //       from: "SkillWrap <onboarding@resend.dev>",
+
+// //       to,
+
+// //       subject,
+
+// //       text,
+
+// //       html,
+
+// //     });
+
+
+// //     console.log("📬 Resend response:", response);
+
+
+// //     // IMPORTANT
+// //     if (response.error) {
+// //       throw new Error(response.error.message);
+// //     }
+
+
+// //     return response;
+
+
+// //   } catch(err) {
+
+// //     console.error(
+// //       "❌ Resend send email error:",
+// //       err.message
+// //     );
+
+// //     throw err;
+
+// //   }
+// // };
+
 
 
