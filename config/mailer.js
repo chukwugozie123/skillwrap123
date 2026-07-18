@@ -45,7 +45,14 @@ module.exports = async function sendEmail({
   }
 };
 
-
+(async () => {
+  try {
+    await transporter.verify();
+    console.log("✅ SMTP Ready");
+  } catch (err) {
+    console.error("❌ VERIFY FAILED:", err);
+  }
+})();
 
 
 
