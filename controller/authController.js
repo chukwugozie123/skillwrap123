@@ -221,14 +221,13 @@ exports.dashboard = async (req, res) => {
 
 
 
-function isAuthenticated(req, res, next) {
-    if(req.isAuthenticated())
-        return next();
-    res.redirect("/login");
-}
-
-exports.profile = [
-  isAuthenticated,
+// function isAuthenticated(req, res, next) {
+//     if(req.isAuthenticated())
+//         return next();
+//     res.redirect("/login");
+// }
+// exports.profile = [
+//   isAuthenticated,
 exports.getProfile = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -263,8 +262,8 @@ exports.getProfile = async (req, res) => {
       error: "Something went wrong.",
     });
     }
-  }
-];
+  };
+// ];
 
 exports.edit_profile = async (req, res) => {
   const userId = req.user.id

@@ -185,9 +185,23 @@ passport.use(
       try {
         const email = profile.emails?.[0]?.value;
         const fullname = profile.displayName;
-        const username = fullname.replace(/\s+/g, "").toLowerCase();
+        const baseUsername = fullname.replace(/[^a-z0-9]/g, "").toLowerCase();
+          let username = baseUsername;
+
+          while (true) {
+            const exists = await db.query(
+              "SELECT id FROM users WHERE username = $1",
+              [username]
+            );
+
+            if (exists.rows.length === 0) break;
+
+            username =
+              baseUsername + Math.floor(1000 + Math.random() * 9000);
+          }
+        // const username = fullname.replace(/\s+/g, "").toLowerCase();
         const photo = profile.photos?.[0]?.value || null;
-        console.log(photo, 'photo google')
+       const referralCode = username + Math.floor(1000 + Math.random() * 9000);
 
         if (!email) {
           return cb(new Error("Google account has no email"), null);
@@ -203,11 +217,11 @@ passport.use(
           const insert = await db.query(
             `
             INSERT INTO users 
-            (fullname, username, email, hash_password, img_url, email_verified)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            (fullname, username, email, hash_password, img_url, email_verified, referral_code)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
             `,
-            [fullname, username, email, "google-oauth", photo, true]
+            [fullname, username, email, "google-oauth", photo, true, referralCode]
           );
 
           return cb(null, insert.rows[0]);

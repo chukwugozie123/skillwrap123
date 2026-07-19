@@ -21,21 +21,37 @@ router.get(
 );
 
 
-
 router.get(
   "/google/profile",
   passport.authenticate("google", {
     failureRedirect: `${API_URL}/login`,
   }),
   (req, res) => {
-    // ✅ user is authenticated here
-    res.redirect(`${API_URL}/dashboard`);
+
+    console.log("Authenticated:", req.isAuthenticated());
+    console.log("Session:", req.sessionID);
+    console.log("User:", req.user);
+
+    req.session.save(err => {
+      console.log("Session saved:", err);
+      res.redirect(`${API_URL}/dashboard`);
+    });
   }
 );
+// router.get(
+//   "/google/profile",
+//   passport.authenticate("google", {
+//     failureRedirect: `${API_URL}/login`,
+//   }),
+//   (req, res) => {
+//     // ✅ user is authenticated here
+//     res.redirect(`${API_URL}/dashboard`);
+//   }
+// );
 
 router.get("/dashboard", ensureAuth, authController.dashboard);
 router.post("/logout",ensureAuth, authController.logout)
-router.get("/profile", authController.profile);
+router.get("/profile", authController.getProfile);
 router.patch("/edit-profile", authController.edit_profile)
 router.post("/points/add", authController.addPoints);
 router.get("/Leaderboard", authController.GetLeaderBoard)
